@@ -90,10 +90,11 @@ void loop() {
   // 余裕がないので消えました。
   prev_ms = millis();
   move_updated = false;
+
   if (Serial2.available()) //データ受け取りが可能なら
   {
-    int8_t temp_mov[8];
-    Serial2.readBytes((uint8_t*)temp_mov,8);
+    uint8_t temp_mov[8];
+    Serial2.readBytes(temp_mov,8);
     if(test_checksum(temp_mov)){
       for (size_t i = 0; i < 8; i++) {movement[i]=temp_mov[i];}        
     }
@@ -133,7 +134,7 @@ int myFunction(int x, int y) {
   return x + y;
 }
 
-int8_t culc_checksum(int8_t* data){
+uint8_t culc_checksum(uint8_t* data){
   uint16_t tempval = 0;
   for (size_t i = 0; i < 7; i++){
     tempval+=data[i];
@@ -141,7 +142,7 @@ int8_t culc_checksum(int8_t* data){
   return (tempval&0xff);  
 }
 
-bool test_checksum(int8_t* data){
+bool test_checksum(uint8_t* data){
   return (data[7]==culc_checksum(data));
 };
 
@@ -168,10 +169,10 @@ int move_liner(int speed, int dx, int dy) {
     
     */
     // モーターへ方向を入力           //  前 - 右
-    ledcWrite(0, round(128.0+dyad+dxad)); //  cw - cw
-    ledcWrite(1, round(128.0-dyad+dxad)); // ccw - cw
-    ledcWrite(2, round(128.0-dyad-dxad)); // ccw - ccw
-    ledcWrite(3, round(128.0+dyad-dxad)); //  cw - ccw
+    ledcWrite(0, round(127.5+dyad+dxad)); //  cw - cw
+    ledcWrite(1, round(127.5-dyad+dxad)); // ccw - cw
+    ledcWrite(2, round(127.5-dyad-dxad)); // ccw - ccw
+    ledcWrite(3, round(127.5+dyad-dxad)); //  cw - ccw
 
     if(!motor_powered){ // モーター起動
       digitalWrite(MD_PIN_LOCK,HIGH);

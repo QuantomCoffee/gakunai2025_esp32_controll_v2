@@ -1,6 +1,7 @@
-#include <Arduino.h>
+#include <Arduino.h> 
 #include <PS4Controller.h>
-#include <SMS_STS.h>
+#include <SMS_STS.h> // STServo.zipより
+#include <Adafruit_TSL2591.h> //カラーセンサー
 
 #define S2_TX 16
 #define S2_RX 17
@@ -39,11 +40,11 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  int8_t movement[8] = {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0};
+  uint8_t movement[8] = {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0};
   // 行動パターンを決めます。1バイト目は0x58で固定です。8バイト目はチェックサムです。
   // movementは基本的にそのままESP32(下)に転送します。
 
-  // int8_t senddata[8] = {0x58,0xfe,0x0,0x0,0x0,0x0,0x0,0x0};
+  // uint8_t senddata[8] = {0x58,0xfe,0x0,0x0,0x0,0x0,0x0,0x0};
   // ラズパイ/PCに返却するデータです。
   // 余裕がないので消えました。
 
@@ -81,46 +82,81 @@ void loop() {
     #define KEY_RAIL_OFF PS4.Triangle() //レールをオフにします
 
     #define KEY_MODE_SW PS4.Options() //単押しで運転モードとアームモードを切り替えます。長押しすると自動化を起動します。
+    #define KEY_MODE_SW_TM 2000 // ↑の長押しの基準
 
     static int mode_ = 1;
+    static int mode_sw_bt = 0; // 押されたらその時のmillis()に書き換える
 
+    if(KEY_MODE_SW){
+      if(mode_sw_bt==0){
+        mode_sw_bt = millis();
+      }
+    }else{
+      if(mode_sw_bt!=0){
+        if((millis()-mode_sw_bt)>=KEY_MODE_SW_TM){
+          automationEnable = !automationEnable;
+        }else{
+          if(mode_==2){
+            mode_==1;
+          }else{
+            mode_+=1;
+          }
+        }
+        mode_sw_bt=0;
+      }
+    }
+    
     if(mode_==2){
       // やだああああああああああああああああああああ
     }else{
+      PS4.setLed(0xff,0xb7,0x00);
       if (GUAGE_DRIVE_ACCEL)
       {
+        // 加速する。優先度は回転>微調整>スティック
+        // movement[1]には操作の種類、[2],[3]はX,Y成分、[4]には速度(場合によっては時計回りのみ)が入力される
         if(KEY_ROTATE_CCW&&KEY_ROTATE_CW){
+          // 左右回転が同時に押されたとき
           Serial.println("WHAT?");
         }else if(KEY_DRIVE_BACK&&KEY_DRIVE_FRONT){
+          // 前後移動が同時に押されたとき
           Serial.println("WHAT??");
         }else if((KEY_ROTATE_CCW||KEY_ROTATE_CW)&&(KEY_DRIVE_BACK||KEY_DRIVE_FRONT)){
+          // 回転移動指定と前後移動指定が同時に押されたとき
           Serial.println("WHAT???");
         }else if(KEY_ROTATE_CW){
+          // 時計回りに回転
           movement[1]=0x21;
-          movement[5]=(GUAGE_DRIVE_ACCEL>>1)&0x7f;
+          movement[4]=(GUAGE_DRIVE_ACCEL>>1);
         }else if(KEY_ROTATE_CCW){
           movement[1]=0x21;
-          movement[5]=(GUAGE_DRIVE_ACCEL>>1)&0x7f;
+          movement[4]=(0x100-(GUAGE_DRIVE_ACCEL>>1))&0xff; // 0xff(=-1)
         }else if(KEY_DRIVE_FRONT){
           movement[1]=0x20;
           movement[2]=0x7f;
           movement[3]=0x00;
-          movement[4]=(GUAGE_DRIVE_ACCEL>>1)&0x7f;
+          movement[4]=(GUAGE_DRIVE_ACCEL>>1);
         }else if(KEY_DRIVE_BACK){
           movement[1]=0x20;
-          movement[2]=-0x7f;
+          movement[2]=0x100-0x7f;
           movement[3]=0x00;
-          movement[4]=(GUAGE_DRIVE_ACCEL>>1)&0x7f;
+          movement[4]=(GUAGE_DRIVE_ACCEL>>1);
         }else if((STICK_DRIVE_FRONT>=16)||(STICK_DRIVE_RIGHT>=16)){
           movement[1]=0x20;
           movement[2]=STICK_DRIVE_FRONT&0xf0;
           movement[3]=STICK_DRIVE_RIGHT&0xf0;
-          movement[4]=(GUAGE_DRIVE_ACCEL>>1)&0x7f;
+          movement[4]=(GUAGE_DRIVE_ACCEL>>1);
         }else{
           movement[1]=0x01;
         }
       }
     }
+
+    // PS4にカラーセンサーの色などを反映
+    PS4.sendToController();
+    
+    // CheckSum
+    movement[7]=culc_checksum(movement);
+    Serial2.write(movement,8);
 
 
 
@@ -164,9 +200,7 @@ void loop() {
   
 
 
-  // CheckSum
-  // senddata[7]=culc_checksum(senddata);
-  // Serial.write(senddata,8);
+
 
 }
 
@@ -175,7 +209,7 @@ int myFunction(int x, int y) {
   return x + y;
 }
 
-int8_t culc_checksum(int8_t* data){
+uint8_t culc_checksum(uint8_t* data){
   uint16_t tempval = 0;
   for (size_t i = 0; i < 7; i++){
     tempval+=data[i];
@@ -183,6 +217,6 @@ int8_t culc_checksum(int8_t* data){
   return (tempval&0xff);  
 }
 
-bool test_checksum(int8_t* data){
+bool test_checksum(uint8_t* data){
   return (data[7]==culc_checksum(data));
 };
