@@ -18,7 +18,6 @@
 #define LEG_2 0.0 // サーボ2<->3 の長さ (mm)
 #define LEG_3 0.0 // サーボ3<->4 の長さ (mm)
 #define LEG_4 0.0 // サーボ4<->5 の長さ (mm)
-#define LEG_5 0.0 // サーボ5<->6 の長さ (mm)
 
 // define global status
 bool automationEnable = false; // falseの場合は自動化しない (ラズパイは虚空に送り続ける)
