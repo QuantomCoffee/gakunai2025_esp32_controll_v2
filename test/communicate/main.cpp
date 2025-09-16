@@ -40,7 +40,7 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  uint8_t movement[8] = {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0};
+  uint8_t movement[8] = {0x58,0x0,0x0,0x0,0x0,0x0,0x0,0x0};
   // 行動パターンを決めます。1バイト目は0x58で固定です。8バイト目はチェックサムです。
   // movementは基本的にそのままESP32(下)に転送します。
 
@@ -74,7 +74,7 @@ void loop() {
     #define STICK_ARM_FRONT PS4.LStickY() //アーム先端を操縦時、前に進む勢いを示します。スティックが設定できます。
     #define STICK_ARM_RIGHT PS4.LStickX() //アーム先端を操縦時、右に進む勢いを示します。スティックが設定できます。
     #define KEY_ARM_UP PS4.Up() //アームの根元を前へ進めたり、アーム先端を上げたりします。
-    #define KEY_ARM_DW PS4.Uown() //アームの根元を後へ進めたり、アーム先端を下げたりします。
+    #define KEY_ARM_DW PS4.Down() //アームの根元を後へ進めたり、アーム先端を下げたりします。
     #define KEY_ARM_SW PS4.Share() //押されてる間、アームの根元を移動させます。ボタンが設定できます。
 
     // MODE 2+| 予備
@@ -110,44 +110,48 @@ void loop() {
       // やだああああああああああああああああああああ
     }else{
       PS4.setLed(0xff,0xb7,0x00);
-      if (GUAGE_DRIVE_ACCEL)
-      {
-        // 加速する。優先度は回転>微調整>スティック
+      // 加速する。優先度は回転>微調整>スティック
         // movement[1]には操作の種類、[2],[3]はX,Y成分、[4]には速度(場合によっては時計回りのみ)が入力される
-        if(KEY_ROTATE_CCW&&KEY_ROTATE_CW){
-          // 左右回転が同時に押されたとき
-          Serial.println("WHAT?");
-        }else if(KEY_DRIVE_BACK&&KEY_DRIVE_FRONT){
-          // 前後移動が同時に押されたとき
-          Serial.println("WHAT??");
-        }else if((KEY_ROTATE_CCW||KEY_ROTATE_CW)&&(KEY_DRIVE_BACK||KEY_DRIVE_FRONT)){
-          // 回転移動指定と前後移動指定が同時に押されたとき
-          Serial.println("WHAT???");
-        }else if(KEY_ROTATE_CW){
-          // 時計回りに回転
-          movement[1]=0x21;
-          movement[4]=(GUAGE_DRIVE_ACCEL>>1);
-        }else if(KEY_ROTATE_CCW){
-          movement[1]=0x21;
-          movement[4]=(0x100-(GUAGE_DRIVE_ACCEL>>1))&0xff; // 0xff(=-1)
-        }else if(KEY_DRIVE_FRONT){
+      if(KEY_ROTATE_CCW&&KEY_ROTATE_CW){
+        // 左右回転が同時に押されたとき
+        Serial.println("WHAT?");
+      }else if(KEY_DRIVE_BACK&&KEY_DRIVE_FRONT){
+        // 前後移動が同時に押されたとき
+        Serial.println("WHAT??");
+      }else if((KEY_ROTATE_CCW||KEY_ROTATE_CW)&&(KEY_DRIVE_BACK||KEY_DRIVE_FRONT)){
+        // 回転移動指定と前後移動指定が同時に押されたとき
+        Serial.println("WHAT???");
+      }else if(KEY_ROTATE_CW){
+        // 時計回りに回転
+        movement[1]=0x21;
+        movement[4]=(GUAGE_DRIVE_ACCEL>>1);
+      }else if(KEY_ROTATE_CCW){
+        // 反時計回りに回転
+        movement[1]=0x21;
+        movement[4]=(0x100-(GUAGE_DRIVE_ACCEL>>1))&0xff; // 0xff(=-1)
+      }else if(KEY_DRIVE_FRONT){
+        // 前方へ全力前進
+        movement[1]=0x20;
+        movement[2]=0x7f;
+        movement[3]=0x00;
+        movement[4]=(GUAGE_DRIVE_ACCEL>>1);
+      }else if(KEY_DRIVE_BACK){
+        // 後方へ全力前進
+        movement[1]=0x20;
+        movement[2]=0x81; //-127
+        movement[3]=0x00;
+        movement[4]=(GUAGE_DRIVE_ACCEL>>1);
+      }else if (GUAGE_DRIVE_ACCEL) { //方向指定がなければ
+        if((STICK_DRIVE_FRONT>=16)||(STICK_DRIVE_RIGHT>=16)){
+          // とりあえず動かす
           movement[1]=0x20;
-          movement[2]=0x7f;
-          movement[3]=0x00;
+          movement[2]=STICK_DRIVE_FRONT&0xf8;
+          movement[3]=STICK_DRIVE_RIGHT&0xf8;
           movement[4]=(GUAGE_DRIVE_ACCEL>>1);
-        }else if(KEY_DRIVE_BACK){
-          movement[1]=0x20;
-          movement[2]=0x100-0x7f;
-          movement[3]=0x00;
-          movement[4]=(GUAGE_DRIVE_ACCEL>>1);
-        }else if((STICK_DRIVE_FRONT>=16)||(STICK_DRIVE_RIGHT>=16)){
-          movement[1]=0x20;
-          movement[2]=STICK_DRIVE_FRONT&0xf0;
-          movement[3]=STICK_DRIVE_RIGHT&0xf0;
-          movement[4]=(GUAGE_DRIVE_ACCEL>>1);
-        }else{
-          movement[1]=0x01;
         }
+      }else {
+        // なんもないなら止めようぜ
+        movement[1]=0x2f;
       }
     }
 
@@ -157,6 +161,7 @@ void loop() {
     // CheckSum
     movement[7]=culc_checksum(movement);
     Serial2.write(movement,8);
+    
 
 
 

@@ -108,9 +108,11 @@ void loop() {
   
   
   if(movement[1]==0x20){       // 0x20 平行移動
+    int mvdx = movement[2]>=0x80 ? movement[2]-0x100 : movement[2];
+    int mvdy = movement[3]>=0x80 ? movement[3]-0x100 : movement[3];
     move_liner(movement[4],movement[2],movement[3]);
   }else if(movement[1]==0x21){ // 0x21 回転移動
-    move_rotate(movement[5]);
+    move_rotate(movement[4]);
   }else if(movement[1]==0x2f || movement[1]==0x00){ // 0x00 不明 // 0x2f 移動停止
     digitalWrite(MD_PIN_LOCK,LOW);
     motor_powered = false;
