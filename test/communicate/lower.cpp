@@ -103,7 +103,7 @@ void loop() {
     move_updated = true;
     sw_time = prev_ms;
   }else{ //0.05秒ごとに送る指示出してるのに0.4秒も待たせるって何があった?
-    if((sw_time-prev_ms)>=400){
+    if((prev_ms-sw_time)>=400){
       for (size_t i = 0; i < 8; i++) {movement[i]=0x00;}        
     }
   }
