@@ -36,8 +36,8 @@ ESP32Encoder encoder_m3;
 
 // put function declarations here:
 int myFunction(int, int);
-int8_t culc_checksum(int8_t*);
-bool test_checksum(int8_t*);
+uint8_t culc_checksum(uint8_t*);
+bool test_checksum(uint8_t*);
 
 int move_liner(int speed, int dx, int dy);
 int move_rotate(int speedClockwise);
@@ -45,6 +45,7 @@ int move_rotate(int speedClockwise);
 void setup() {
   // put your setup code here, to run once:
   Serial2.begin(115200,134217756U,S2_RX,S2_TX); // to ESP32
+  Serial.begin(115200);
   
     // motor encoder
   ESP32Encoder::useInternalWeakPullResistors=puType::none;
@@ -95,6 +96,7 @@ void loop() {
   {
     uint8_t temp_mov[8];
     Serial2.readBytes(temp_mov,8);
+    Serial.printf("%d, %d, %d, %d, %d, %d, %d, %d, \n",temp_mov[0],temp_mov[1],temp_mov[2],temp_mov[3],temp_mov[4],temp_mov[5],temp_mov[6],temp_mov[7]);
     if(test_checksum(temp_mov)){
       for (size_t i = 0; i < 8; i++) {movement[i]=temp_mov[i];}        
     }

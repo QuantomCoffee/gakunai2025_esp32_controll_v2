@@ -1,7 +1,6 @@
 #include <Arduino.h> 
 #include <PS4Controller.h>
 #include <SMS_STS.h> // STServo.zipより
-#include <Adafruit_TSL2591.h> //カラーセンサー
 
 // pin群 
 #define S2_TX 16 // to ESP(lowerhalf)
@@ -29,8 +28,8 @@ int delta_sw_time;
 
 // put function declarations here:
 int myFunction(int, int);
-int8_t culc_checksum(int8_t*);
-bool test_checksum(int8_t*);
+uint8_t culc_checksum(uint8_t*);
+bool test_checksum(uint8_t*);
 
 
 
@@ -50,6 +49,7 @@ void setup() {
   // Servo.Ping(1); //アームは1～6を使用、ベルトコンベアは知らん。
   prev_ms = millis();
   sw_time = millis();
+  delay(1000);
 }
 
 void loop() {
@@ -112,7 +112,7 @@ void loop() {
           automationEnable = !automationEnable;
         }else{
           if(mode_==2){
-            mode_==1;
+            mode_=1;
           }else{
             mode_+=1;
           }
@@ -176,14 +176,18 @@ void loop() {
     }
 
     // PS4に状態カラーセンサーの色などを反映
-    PS4.sendToController();
+    if((millis()-prev_ms)>50){
+      PS4.sendToController();
+      prev_ms=millis();
+    }
     
     // CheckSum
     movement[7]=culc_checksum(movement);
 
     // ESPにぶん投げる
     Serial2.write(movement,8);
-  
+    
+  delay(25);
 }
   /*
   if (Serial.available()&&automationEnable&&movement[0]==0x0) //何も書き込まれてなくて、自動化がOKなら。
