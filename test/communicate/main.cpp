@@ -103,7 +103,7 @@ void loop() {
     #define KEY_ARM_HOLD PS4.Circle() //アームでつかむ・はなすを切り替えます。はなす場合は後述の解放キーを同時に押す必要があります。
     #define KEY_ARM_REL_LOCK PS4.R1() //アームで話す場合の安全ロックです。ボタンまたはTrueが設定できます。Trueを代入すると無効になります。
     #define STICK_ARM_FRONT PS4.LStickY() //アーム先端を操縦時、前に進む勢いを示します。スティックが設定できます。
-    #define STICK_ROTATE PS4.LStickX() //機体を回転させます。スティックが設定できます。
+    //#define STICK_ROTATE PS4.LStickX() //機体を回転させます。スティックが設定できます。
     #define KEY_ARM_UP PS4.Up() //アームの根元を前へ進めたり、アーム先端を上げたりします。
     #define KEY_ARM_DW PS4.Down() //アームの根元を後へ進めたり、アーム先端を下げたりします。
     #define KEY_ARM_SW PS4.Share() //押されてる間、アームの根元を移動させます。ボタンが設定できます。
@@ -145,15 +145,17 @@ void loop() {
     if(mode_==2){
       // やだああああああああああああああああああああ
       PS4.setLed(0x30,0xff,0x30);
-      if(abs(STICK_ROTATE)>=32){
+      if(KEY_ROTATE_CCW||KEY_ROTATE_CW){ // 回転移動指定と前後移動指定が同時に押されたとき
+        Serial.println("WHAT???");
+      }else if(KEY_ROTATE_CW){ // 時計回りに回転
         movement[1]=0x21;
-        movement[4]=round(STICK_ROTATE+0x80-(adjusting_stick_100x/100)); //
+        movement[4]=0x80+(GUAGE_DRIVE_ACCEL>>1);
+      }else if(KEY_ROTATE_CCW){ // 反時計回りに回転
+        movement[1]=0x21;
+        movement[4]=0x80-(GUAGE_DRIVE_ACCEL>>1);
       }
 
       // put アームの処理 here.
-
-      float arm_pos_x;
-      float arm_pos_y;
 
       /*
         注意：PRG_3,4,5について
@@ -173,11 +175,11 @@ void loop() {
       // 現在地取得
       // cos,sinはラジアンを引数に取るので、PI/2048をかけて-4096~4096を-2pi～2piへ変換
 
-      arm_pos_x = 
+      static float arm_pos_x = 
         LEG_2*cosf((DEG_3)*(PI/2048)) + 
         LEG_3*cosf((DEG_3+DEG_4)*(PI/2048)) +
         LEG_4*cosf((DEG_3+DEG_4+DEG_5)*(PI/2048));
-      arm_pos_y = 
+      static float arm_pos_y = 
         LEG_2*sinf((DEG_3)*(PI/2048)) + 
         LEG_3*sinf((DEG_3+DEG_4)*(PI/2048)) +
         LEG_4*sinf((DEG_3+DEG_4+DEG_5)*(PI/2048));
@@ -261,7 +263,7 @@ void loop() {
         movement[3]=0x80; //   0
         movement[4]=(GUAGE_DRIVE_ACCEL>>1);
       }else if (GUAGE_DRIVE_ACCEL) { //方向指定がなければ
-        if((STICK_DRIVE_FRONT>=16)||(STICK_DRIVE_RIGHT>=16)){ // とりあえず動かす
+        if((abs(STICK_DRIVE_FRONT)>=16)||(abs(STICK_DRIVE_RIGHT)>=16)){ // とりあえず動かす
           movement[1]=0x20;
           movement[2]=STICK_DRIVE_FRONT+0x80;
           movement[3]=STICK_DRIVE_RIGHT+0x80;
@@ -272,17 +274,19 @@ void loop() {
       }
 
       // スティックのキャリブレーション
+      /*
       if(KEY_ADJ_STRT){
-        PS4.setFlashRate(30,30);
+        PS4.setFlashRate(200,200);
         deltasumcount+=1;
         deltasumstick+=STICK_ROTATE;
       }else{
+        PS4.setFlashRate(0,0);
         if(deltasumcount>0){
           adjusting_stick_100x = (deltasumstick*100)/deltasumcount;
           deltasumcount = 0;
           deltasumstick = 0;
         }
-      }
+      }*/
     }
 
     // PS4に状態カラーセンサーの色などを反映
@@ -296,9 +300,10 @@ void loop() {
 
     // ESPにぶん投げる
     Serial2.write(movement,8);
-  
+    if ((loop_delta-millis())<25){
+      delay(25);
+    }
     loop_delta = millis();
-    delay(25);
   }
   /*
   if (Serial.available()&&automationEnable&&movement[0]==0x0) //何も書き込まれてなくて、自動化がOKなら。
