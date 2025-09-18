@@ -20,9 +20,6 @@
 #define MD_PIN_LOCK 27
 
 // define global status
-bool automationEnable = false; // falseの場合は自動化しない (ラズパイは虚空に送り続ける)
-bool arm_status; // これは後で位置を確認するので未定義。
-SMS_STS Servo;
 int prev_ms;
 int sw_time;
 bool move_updated;
@@ -102,19 +99,19 @@ void loop() {
     }
     move_updated = true;
     sw_time = prev_ms;
-  }else{ //0.05秒ごとに送る指示出してるのに0.4秒も待たせるって何があった?
-    if((prev_ms-sw_time)>=400){
+  }else{ //0.05秒ごとに送る指示出してるのに0.2秒も待たせるって何があった?
+    if((prev_ms-sw_time)>=200){
       for (size_t i = 0; i < 8; i++) {movement[i]=0x00;}        
     }
   }
   
   
   if(movement[1]==0x20){       // 0x20 平行移動
-    int mvdx = movement[2]>=0x80 ? movement[2]-0x100 : movement[2];
-    int mvdy = movement[3]>=0x80 ? movement[3]-0x100 : movement[3];
+    int mvdx = movement[2]-0x80;
+    int mvdy = movement[3]-0x80;
     move_liner(movement[4],movement[2],movement[3]);
   }else if(movement[1]==0x21){ // 0x21 回転移動
-    move_rotate(movement[4]);
+    move_rotate(movement[4]-0x80);
   }else if(movement[1]==0x2f || movement[1]==0x00){ // 0x00 不明 // 0x2f 移動停止
     digitalWrite(MD_PIN_LOCK,LOW);
     motor_powered = false;
@@ -173,10 +170,10 @@ int move_liner(int speed, int dx, int dy) {
     
     */
     // モーターへ方向を入力           //  前 - 右
-    ledcWrite(0, round(127.5+dyad+dxad)); //  cw - cw
-    ledcWrite(1, round(127.5-dyad+dxad)); // ccw - cw
-    ledcWrite(2, round(127.5-dyad-dxad)); // ccw - ccw
-    ledcWrite(3, round(127.5+dyad-dxad)); //  cw - ccw
+    ledcWrite(0, round(128+dyad+dxad)); //  cw - cw
+    ledcWrite(1, round(128-dyad+dxad)); // ccw - cw
+    ledcWrite(2, round(128-dyad-dxad)); // ccw - ccw
+    ledcWrite(3, round(128+dyad-dxad)); //  cw - ccw
 
     if(!motor_powered){ // モーター起動
       digitalWrite(MD_PIN_LOCK,HIGH);
