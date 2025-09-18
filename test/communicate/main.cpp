@@ -297,9 +297,9 @@ void loop() {
     // ESPにぶん投げる
     Serial2.write(movement,8);
   
-  loop_delta = millis();
-  delay(25);
-}
+    loop_delta = millis();
+    delay(25);
+  }
   /*
   if (Serial.available()&&automationEnable&&movement[0]==0x0) //何も書き込まれてなくて、自動化がOKなら。
   {
@@ -317,17 +317,6 @@ void loop() {
     }
   } */
   
-
-  
-
-
-
-
-  
-
-
-
-
 }
 
 // put function definitions here:
