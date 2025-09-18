@@ -17,6 +17,7 @@
 #define LEG_2 0.0 // サーボ2<->3 の長さ (mm)
 #define LEG_3 0.0 // サーボ3<->4 の長さ (mm)
 #define LEG_4 0.0 // サーボ4<->5 の長さ (mm)
+#define LEG_s 0.0 // サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
 #define PRG_2 -0 // サーボ2 水平位置 (x1/4096回転)
 #define PRG_3 -0 // サーボ3 水平位置 (x1/4096回転)
 #define PRG_4 -0 // サーボ4 水平位置 (x1/4096回転)
@@ -44,7 +45,9 @@ int delta_sw_time;
 int myFunction(int, int);
 uint8_t culc_checksum(uint8_t*);
 bool test_checksum(uint8_t*);
-float csq(float x){return x*x;}; //2乗
+
+//2乗
+float csq(float x){return x*x;};
 void registering_pos(uint8_t id,float radian_arg);
 
 
@@ -145,7 +148,7 @@ void loop() {
     if(mode_==2){
       // やだああああああああああああああああああああ
       PS4.setLed(0x30,0xff,0x30);
-      if(KEY_ROTATE_CCW||KEY_ROTATE_CW){ // 回転移動指定と前後移動指定が同時に押されたとき
+      if(KEY_ROTATE_CCW&&KEY_ROTATE_CW){ // 回転移動指定と前後移動指定が同時に押されたとき
         Serial.println("WHAT???");
       }else if(KEY_ROTATE_CW){ // 時計回りに回転
         movement[1]=0x21;
@@ -175,14 +178,16 @@ void loop() {
       // 現在地取得
       // cos,sinはラジアンを引数に取るので、PI/2048をかけて-4096~4096を-2pi～2piへ変換
 
+      #define ROTPI 0.0015340 //=PI/2048
+
       static float arm_pos_x = 
-        LEG_2*cosf((DEG_3)*(PI/2048)) + 
-        LEG_3*cosf((DEG_3+DEG_4)*(PI/2048)) +
-        LEG_4*cosf((DEG_3+DEG_4+DEG_5)*(PI/2048));
+        LEG_2*cosf((DEG_3)*ROTPI) + 
+        LEG_3*cosf((DEG_3+DEG_4)*ROTPI) +
+        LEG_4*cosf((DEG_3+DEG_4+DEG_5)*ROTPI);
       static float arm_pos_y = 
-        LEG_2*sinf((DEG_3)*(PI/2048)) + 
-        LEG_3*sinf((DEG_3+DEG_4)*(PI/2048)) +
-        LEG_4*sinf((DEG_3+DEG_4+DEG_5)*(PI/2048));
+        LEG_2*sinf((DEG_3)*ROTPI) + 
+        LEG_3*sinf((DEG_3+DEG_4)*ROTPI) +
+        LEG_4*sinf((DEG_3+DEG_4+DEG_5)*ROTPI);
 
       // 差分計算
       if(abs(STICK_ARM_FRONT)>=24){
@@ -208,27 +213,26 @@ void loop() {
       float T_ARG_5,T_ARG_4,T_ARG_3,T_ARG_2;
       float CALC_A = arm_pos_x-(LEG_2*cosf(arm_arg));
       float CALC_B = arm_pos_y-(LEG_2*sinf(arm_arg));
+      float C_A2_B2 = csq(CALC_A)+csq(CALC_B);
       float CALC_G = atanf(CALC_B/CALC_A);
 
       // 計算フェーズ
       T_ARG_5 =
         CALC_G +
         acosf(
-          (csq(CALC_A)+csq(CALC_B)+csq(LEG_4)+csq(LEG_3))/
-          (2*LEG_4*sqrtf(csq(CALC_A)+csq(CALC_B)))
+          (C_A2_B2+LEG_s)/
+          (2*LEG_4*sqrtf(C_A2_B2))
         );
+      
+      float CALC_H = atanf(
+          (CALC_B-(LEG_4*sinf(T_ARG_5)))/
+          (CALC_A-(LEG_4*cosf(T_ARG_5)))
+        );
+      
       T_ARG_4 = 
-        -T_ARG_5 +
-        atanf(
-          (CALC_B-(LEG_4*sinf(T_ARG_5)))/
-          (CALC_A-(LEG_4*cosf(T_ARG_5)))
-        );
+        -T_ARG_5 + CALC_H;
       T_ARG_3 = 
-        arm_arg -
-        atanf(
-          (CALC_B-(LEG_4*sinf(T_ARG_5)))/
-          (CALC_A-(LEG_4*cosf(T_ARG_5)))
-        );
+        arm_arg - CALC_H;
       T_ARG_2 = 
         -PI-arm_arg;
 
@@ -342,7 +346,7 @@ bool test_checksum(uint8_t* data){
 };
 
 void registering_pos(uint8_t id,float radian_arg){
-  int nxtpos = roundf((radian_arg*2048)/PI);
+  int nxtpos = roundf(radian_arg*651.899);
   int nowpos = Servo.ReadPos(id);
   while (nxtpos<0) {
     nxtpos+=4096;

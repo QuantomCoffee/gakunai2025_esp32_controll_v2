@@ -93,7 +93,7 @@ void loop() {
   {
     uint8_t temp_mov[8];
     Serial2.readBytes(temp_mov,8);
-    Serial.printf("%d, %d, %d, %d, %d, %d, %d, %d, \n",temp_mov[0],temp_mov[1],temp_mov[2],temp_mov[3],temp_mov[4],temp_mov[5],temp_mov[6],temp_mov[7]);
+    Serial.printf("%d, %d, %d, %d, %d, %d, %d, %d (%dms) \n",temp_mov[0],temp_mov[1],temp_mov[2],temp_mov[3],temp_mov[4],temp_mov[5],temp_mov[6],temp_mov[7],millis()-sw_time);
     if(test_checksum(temp_mov)){
       for (size_t i = 0; i < 8; i++) {movement[i]=temp_mov[i];}        
     }
