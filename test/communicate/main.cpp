@@ -350,5 +350,11 @@ bool test_checksum(uint8_t* data){
 void registering_pos(uint8_t id,float radian_arg){
   int nxtpos = roundf((radian_arg*2048)/PI);
   int nowpos = Servo.ReadPos(id);
-  if(nxtpos<0){}
+  while (nxtpos<0) {
+    nxtpos+=4096;
+  }
+  while (nxtpos>4096) {
+    nxtpos-=4096;
+  }
+  Servo.WritePosEx(id, nxtpos, 0);
 }
