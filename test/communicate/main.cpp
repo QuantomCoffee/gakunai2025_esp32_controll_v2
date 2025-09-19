@@ -156,6 +156,8 @@ void loop() {
       }else if(KEY_ROTATE_CCW){ // 反時計回りに回転
         movement[1]=0x21;
         movement[4]=0x80-(GUAGE_DRIVE_ACCEL>>1);
+      }else { // なんもないなら止めようぜ
+        movement[1]=0x2f;
       }
 
       // put アームの処理 here.
