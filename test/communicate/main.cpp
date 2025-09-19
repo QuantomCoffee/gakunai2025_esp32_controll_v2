@@ -50,7 +50,14 @@ bool test_checksum(uint8_t*);
 float csq(float x){return x*x;};
 void registering_pos(uint8_t id,float radian_arg);
 
-
+// fast_atanf 高速近似関数 by github copilot
+float fast_atanf(float x) {
+    if (fabsf(x) > 1.0f) {
+        return (x > 0 ? 1.57079632679f : -1.57079632679f) - fast_atanf(1.0f / x);
+    }
+    float x2 = x * x;
+    return x * (0.97239411f - 0.19194795f * x2);
+}
 
 void setup() {
   // put your setup code here, to run once:
@@ -210,13 +217,13 @@ void loop() {
       else if (arm_pos_y<LIM_Y_MIN) {arm_pos_y=LIM_Y_MIN;}
       
       // 姿勢角 alpha
-      float arm_arg = atanf(arm_pos_x/arm_pos_y)-(PI/2);
+      float arm_arg = fast_atanf(arm_pos_x/arm_pos_y)-(PI/2);
 
       float T_ARG_5,T_ARG_4,T_ARG_3,T_ARG_2;
       float CALC_A = arm_pos_x-(LEG_2*cosf(arm_arg));
       float CALC_B = arm_pos_y-(LEG_2*sinf(arm_arg));
       float C_A2_B2 = csq(CALC_A)+csq(CALC_B);
-      float CALC_G = atanf(CALC_B/CALC_A);
+      float CALC_G = fast_atanf(CALC_B/CALC_A);
 
       // 計算フェーズ
       T_ARG_5 =
@@ -226,7 +233,7 @@ void loop() {
           (2*LEG_4*sqrtf(C_A2_B2))
         );
       
-      float CALC_H = atanf(
+      float CALC_H = fast_atanf(
           (CALC_B-(LEG_4*sinf(T_ARG_5)))/
           (CALC_A-(LEG_4*cosf(T_ARG_5)))
         );

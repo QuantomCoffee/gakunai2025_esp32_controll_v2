@@ -18,6 +18,7 @@
 #define MD_PIN2 25
 #define MD_PIN3 26
 #define MD_PIN_LOCK 27
+#define MV_SCALE 0.75
 
 // define global status
 int prev_ms;
@@ -174,10 +175,10 @@ int move_liner(int speed, int dx, int dy) {
     
     */
     // モーターへ方向を入力               //  前 - 右
-    ledcWrite(0, round(128+dxad+dyad)); //  cw - cw
-    ledcWrite(1, round(128-dxad+dyad)); // ccw - cw
-    ledcWrite(2, round(128-dxad-dyad)); // ccw - ccw
-    ledcWrite(3, round(128+dxad-dyad)); //  cw - ccw
+    ledcWrite(0, round(128+(-dxad-dyad)*MV_SCALE)); //  cw - cw
+    ledcWrite(1, round(128+(+dxad-dyad)*MV_SCALE)); // ccw - cw
+    ledcWrite(2, round(128+(+dxad+dyad)*MV_SCALE)); // ccw - ccw
+    ledcWrite(3, round(128+(-dxad+dyad)*MV_SCALE)); //  cw - ccw
 
     if(!motor_powered){ // モーター起動
       digitalWrite(MD_PIN_LOCK,HIGH);
