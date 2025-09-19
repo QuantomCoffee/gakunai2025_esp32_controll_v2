@@ -41,6 +41,11 @@ int loop_delta; // コントロールの時間差分
 int sw_time;  // コントローラーが最後につながってた時間
 int delta_sw_time;
 
+// define arm values
+float arm_pos_x; // アーム先端のX座標 (mm)
+float arm_pos_y; // アーム先端のY座標 (mm)
+
+
 // put function declarations here:
 int myFunction(int, int);
 uint8_t culc_checksum(uint8_t*);
@@ -49,15 +54,6 @@ bool test_checksum(uint8_t*);
 //2乗
 float csq(float x){return x*x;};
 void registering_pos(uint8_t id,float radian_arg);
-
-// fast_atanf 高速近似関数 by github copilot
-float fast_atanf(float x) {
-    if (fabsf(x) > 1.0f) {
-        return (x > 0 ? 1.57079632679f : -1.57079632679f) - fast_atanf(1.0f / x);
-    }
-    float x2 = x * x;
-    return x * (0.97239411f - 0.19194795f * x2);
-}
 
 void setup() {
   // put your setup code here, to run once:
@@ -71,11 +67,31 @@ void setup() {
   Servo.WritePosEx(1,0,0);
   Servo.WritePosEx(2,0,0);
 
+  // アーム角度計算 (1/4096回転単位)
+  float DEG_3 = (Servo.Ping(3)==-1) ? 0 : (Servo.ReadPos(3)-PRG_3)/GER_3;
+  float DEG_4 = (Servo.Ping(4)==-1) ? 0 : (Servo.ReadPos(4)-PRG_4)/GER_4;
+  float DEG_5 = (Servo.Ping(5)==-1) ? 0 : (Servo.ReadPos(5)-PRG_5)/GER_5;
+
+  // アーム現在地取得
+  // cos,sinはラジアンを引数に取るので、PI/2048をかけて-4096~4096を-2pi～2piへ変換
+
+  #define ROTPI 0.0015340 //=PI/2048
+
+  arm_pos_x = 
+    LEG_2*cosf((DEG_3)*ROTPI) + 
+    LEG_3*cosf((DEG_3+DEG_4)*ROTPI) +
+    LEG_4*cosf((DEG_3+DEG_4+DEG_5)*ROTPI);
+  arm_pos_y = 
+    LEG_2*sinf((DEG_3)*ROTPI) + 
+    LEG_3*sinf((DEG_3+DEG_4)*ROTPI) +
+    LEG_4*sinf((DEG_3+DEG_4+DEG_5)*ROTPI);
+
+
   // Servo.Ping(1); //アームは1～6を使用、ベルトコンベアは知らん。
   prev_ms = millis(); 
   loop_delta = millis();
   sw_time = millis();
-  delay(1000);
+  delay(100);
 }
 
 void loop() {
@@ -177,26 +193,8 @@ void loop() {
         もし図面とサーボ回転方向が逆であればギア比を負にすること。
       */
 
-      // 角度計算 (1/4096回転単位)
-
-      float DEG_3 = (Servo.ReadPos(3)-PRG_3)/GER_3;
-      float DEG_4 = (Servo.ReadPos(4)-PRG_4)/GER_4;
-      float DEG_5 = (Servo.ReadPos(5)-PRG_5)/GER_5;
-
-
-      // 現在地取得
-      // cos,sinはラジアンを引数に取るので、PI/2048をかけて-4096~4096を-2pi～2piへ変換
-
-      #define ROTPI 0.0015340 //=PI/2048
-
-      static float arm_pos_x = 
-        LEG_2*cosf((DEG_3)*ROTPI) + 
-        LEG_3*cosf((DEG_3+DEG_4)*ROTPI) +
-        LEG_4*cosf((DEG_3+DEG_4+DEG_5)*ROTPI);
-      static float arm_pos_y = 
-        LEG_2*sinf((DEG_3)*ROTPI) + 
-        LEG_3*sinf((DEG_3+DEG_4)*ROTPI) +
-        LEG_4*sinf((DEG_3+DEG_4+DEG_5)*ROTPI);
+      // アームの最初の位置はsetupで計算済み。
+      // というかTimeoutの可能性があるので最初しかやっちゃダメ
 
       // 差分計算
       if(abs(STICK_ARM_FRONT)>=24){
@@ -217,13 +215,13 @@ void loop() {
       else if (arm_pos_y<LIM_Y_MIN) {arm_pos_y=LIM_Y_MIN;}
       
       // 姿勢角 alpha
-      float arm_arg = fast_atanf(arm_pos_x/arm_pos_y)-(PI/2);
+      float arm_arg = atanf(arm_pos_x/arm_pos_y)-(PI/2);
 
       float T_ARG_5,T_ARG_4,T_ARG_3,T_ARG_2;
       float CALC_A = arm_pos_x-(LEG_2*cosf(arm_arg));
       float CALC_B = arm_pos_y-(LEG_2*sinf(arm_arg));
       float C_A2_B2 = csq(CALC_A)+csq(CALC_B);
-      float CALC_G = fast_atanf(CALC_B/CALC_A);
+      float CALC_G = atanf(CALC_B/CALC_A);
 
       // 計算フェーズ
       T_ARG_5 =
@@ -233,7 +231,7 @@ void loop() {
           (2*LEG_4*sqrtf(C_A2_B2))
         );
       
-      float CALC_H = fast_atanf(
+      float CALC_H = atanf(
           (CALC_B-(LEG_4*sinf(T_ARG_5)))/
           (CALC_A-(LEG_4*cosf(T_ARG_5)))
         );
