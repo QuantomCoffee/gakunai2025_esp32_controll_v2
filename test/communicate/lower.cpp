@@ -100,6 +100,7 @@ void loop() {
     move_updated = true;
     sw_time = prev_ms;
   }else{ //0.05秒ごとに送る指示出してるのに0.2秒も待たせるって何があった?
+    move_updated = false;
     if((prev_ms-sw_time)>=200){
       for (size_t i = 0; i < 8; i++) {movement[i]=0x00;}        
     }
@@ -109,12 +110,15 @@ void loop() {
   if(movement[1]==0x20){       // 0x20 平行移動
     int mvdx = movement[2]-0x80;
     int mvdy = movement[3]-0x80;
-    move_liner(movement[4],movement[2],movement[3]);
+    move_liner(movement[4],mvdx,mvdy);
+    if(move_updated){Serial.printf(" -> Move: liner (x: %d, y: %d, speed: %d)\n",mvdx,mvdy,movement[4]);};
   }else if(movement[1]==0x21){ // 0x21 回転移動
     move_rotate(movement[4]-0x80);
+    if(move_updated){Serial.printf(" -> Move: rotate (c.w.speed: %d)\n",movement[4]-0x80);};
   }else if(movement[1]==0x2f || movement[1]==0x00){ // 0x00 不明 // 0x2f 移動停止
     digitalWrite(MD_PIN_LOCK,LOW);
     motor_powered = false;
+    if(move_updated){Serial.printf(" -> Move: stop\n");};
   }
 
 
@@ -169,11 +173,11 @@ int move_liner(int speed, int dx, int dy) {
         #3 ^ ^ #2
     
     */
-    // モーターへ方向を入力           //  前 - 右
-    ledcWrite(0, round(128+dyad+dxad)); //  cw - cw
-    ledcWrite(1, round(128-dyad+dxad)); // ccw - cw
-    ledcWrite(2, round(128-dyad-dxad)); // ccw - ccw
-    ledcWrite(3, round(128+dyad-dxad)); //  cw - ccw
+    // モーターへ方向を入力               //  前 - 右
+    ledcWrite(0, round(128+dxad+dyad)); //  cw - cw
+    ledcWrite(1, round(128-dxad+dyad)); // ccw - cw
+    ledcWrite(2, round(128-dxad-dyad)); // ccw - ccw
+    ledcWrite(3, round(128+dxad-dyad)); //  cw - ccw
 
     if(!motor_powered){ // モーター起動
       digitalWrite(MD_PIN_LOCK,HIGH);
@@ -187,7 +191,6 @@ int move_liner(int speed, int dx, int dy) {
 }
 
 int move_rotate(int speedClockwise) {
-  Serial.printf("Move Rotate: %d\n",speedClockwise);
   if(speedClockwise==0){
     digitalWrite(MD_PIN_LOCK,LOW);
     motor_powered = false;
