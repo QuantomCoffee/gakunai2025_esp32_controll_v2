@@ -97,7 +97,7 @@ void setup() {
 void loop() {
   // put your main code here, to run repeatedly:
 
-  uint8_t movement[8] = {0x58,0x0,0x0,0x0,0x0,0x0,0x0,0x0};
+  uint8_t movement[9] = {0x58,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0};
   // 行動パターンを決めます。1バイト目は0x58で固定です。8バイト目はチェックサムです。
   // movementは基本的にそのままESP32(下)に転送します。
 
@@ -307,7 +307,7 @@ void loop() {
     }
     
     // CheckSum
-    movement[7]=culc_checksum(movement);
+    movement[8]=culc_checksum(movement);
 
     // ESPにぶん投げる
     Serial2.write(movement,8);
@@ -316,22 +316,31 @@ void loop() {
     }
     loop_delta = millis();
   }
-  /*
   if (Serial.available()&&automationEnable&&movement[0]==0x0) //何も書き込まれてなくて、自動化がOKなら。
   {
     delta_sw_time = millis() - sw_time; //さすがにノータイムで自動運転始めるとまずいので...
     if (delta_sw_time >= AUTO_SWITCH_MS) {
       // senddata[6]=0x40;
-      int8_t temp_mov[8];
-      if(Serial.readBytes(temp_mov,8);==8){
+      uint8_t temp_mov[9];
+      if(Serial.readBytes(temp_mov,9)==9){
         if(test_checksum(temp_mov)){
-          for (size_t i = 0; i < 8; i++) {movement[i]=temp_mov[i];}        
+          for (size_t i = 0; i < 9; i++) {movement[i]=temp_mov[i];}        
         }
       }
+      // ESPにぶん投げる
+      Serial2.write(movement,8);
+      if ((loop_delta-millis())<25){
+        delay(25);
+      }
+      loop_delta = millis();
+
+      // put アームの処理 here, again.
+
+      
     } else {
       // senddata[6]=0x60;
     }
-  } */
+  }
   
 }
 

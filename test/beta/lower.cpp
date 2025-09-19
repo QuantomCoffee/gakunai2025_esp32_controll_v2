@@ -79,31 +79,28 @@ void setup() {
 
 void loop() {
   // put your main code here, to run repeatedly:
-  static uint8_t movement[8] = {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0};
+  static uint8_t movement[9] = {0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0};
   
-  // 行動パターンを決めます。1バイト目は0x58で固定です。8バイト目はチェックサムです。
+  // 行動パターンを決めます。1バイト目は0x58で固定です。9バイト目はチェックサムです。
   // movementは基本的にそのままESP32(下)に転送します。
 
-  // int8_t senddata[8] = {0x58,0xfe,0x0,0x0,0x0,0x0,0x0,0x0};
-  // ラズパイ/PCに返却するデータです。
-  // 余裕がないので消えました。
   prev_ms = millis();
   move_updated = false;
 
   if (Serial2.available()) //データ受け取りが可能なら
   {
-    uint8_t temp_mov[8];
-    Serial2.readBytes(temp_mov,8);
-    Serial.printf("%d, %d, %d, %d, %d, %d, %d, %d (%dms) \n",temp_mov[0],temp_mov[1],temp_mov[2],temp_mov[3],temp_mov[4],temp_mov[5],temp_mov[6],temp_mov[7],millis()-sw_time);
+    uint8_t temp_mov[9];
+    Serial2.readBytes(temp_mov,9);
+    Serial.printf("%d, %d, %d, %d, %d, %d, %d, %d, %d (%dms) \n",temp_mov[0],temp_mov[1],temp_mov[2],temp_mov[3],temp_mov[4],temp_mov[5],temp_mov[6],temp_mov[7],temp_mov[8],millis()-sw_time);
     if(test_checksum(temp_mov)){
-      for (size_t i = 0; i < 8; i++) {movement[i]=temp_mov[i];}        
+      for (size_t i = 0; i < 9; i++) {movement[i]=temp_mov[i];}        
     }
     move_updated = true;
     sw_time = prev_ms;
   }else{ //0.05秒ごとに送る指示出してるのに0.2秒も待たせるって何があった?
     move_updated = false;
     if((prev_ms-sw_time)>=200){
-      for (size_t i = 0; i < 8; i++) {movement[i]=0x00;}        
+      for (size_t i = 0; i < 9; i++) {movement[i]=0x00;}        
     }
   }
   
@@ -142,14 +139,14 @@ int myFunction(int x, int y) {
 
 uint8_t culc_checksum(uint8_t* data){
   uint16_t tempval = 0;
-  for (size_t i = 0; i < 7; i++){
+  for (size_t i = 0; i < 8; i++){
     tempval+=data[i];
   }
   return (tempval&0xff);  
 }
 
 bool test_checksum(uint8_t* data){
-  return (data[7]==culc_checksum(data));
+  return (data[8]==culc_checksum(data));
 };
 
 int move_liner(int speed, int dx, int dy) {
