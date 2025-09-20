@@ -175,10 +175,10 @@ int move_liner(int speed, int dx, int dy) {
     
     */
     // モーターへ方向を入力               //  前 - 右
-    ledcWrite(0, round(128+(-dxad-dyad)*MV_SCALE)); //  cw - cw
-    ledcWrite(1, round(128+(+dxad-dyad)*MV_SCALE)); // ccw - cw
-    ledcWrite(2, round(128+(+dxad+dyad)*MV_SCALE)); // ccw - ccw
-    ledcWrite(3, round(128+(-dxad+dyad)*MV_SCALE)); //  cw - ccw
+    ledcWrite(0, 128+round((-dxad-dyad)*MV_SCALE)); //  cw - cw
+    ledcWrite(1, 128+round((+dxad-dyad)*MV_SCALE)); // ccw - cw
+    ledcWrite(2, 128+round((+dxad+dyad)*MV_SCALE)); // ccw - ccw
+    ledcWrite(3, 128+round((-dxad+dyad)*MV_SCALE)); //  cw - ccw
 
     if(!motor_powered){ // モーター起動
       digitalWrite(MD_PIN_LOCK,HIGH);

@@ -55,11 +55,27 @@ bool test_checksum(uint8_t*);
 float csq(float x){return x*x;};
 void registering_pos(uint8_t id,float radian_arg);
 
+// Githubより。
+#include <nvs.h>
+#include <nvs_flash.h>
+void clearNVS() {
+    int err;
+    err=nvs_flash_init();
+    Serial.println("nvs_flash_init: " + err);
+    err=nvs_flash_erase();
+    Serial.println("nvs_flash_erase: " + err);
+ }
+// https://github.com/espressif/arduino-esp32/issues/1941
+
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200); // to PC, or RaspberryPi
   Serial1.begin(1000000,134217756U,S1_RX,S1_TX);
-  Serial2.begin(115200,134217756U,S2_RX,S2_TX); // to ESP32
+  Serial2.begin(115200,134217756U,S2_RX,S2_TX); // to ESP32  
+  clearNVS();
+  delay(50);
+  
   PS4.begin("90:15:06:7c:3e:26"); // PS4 Controller
 
   // for FEETECH Servo (STS3215 12V)
@@ -129,7 +145,7 @@ void loop() {
     #define KEY_ARM_HOLD PS4.Circle() //アームでつかむ・はなすを切り替えます。はなす場合は後述の解放キーを同時に押す必要があります。
     #define KEY_ARM_REL_LOCK PS4.R1() //アームで話す場合の安全ロックです。ボタンまたはTrueが設定できます。Trueを代入すると無効になります。
     #define STICK_ARM_FRONT PS4.LStickY() //アーム先端を操縦時、前に進む勢いを示します。スティックが設定できます。
-    //#define STICK_ROTATE PS4.LStickX() //機体を回転させます。スティックが設定できます。
+    #define STICK_ROTATE PS4.LStickX() //機体を回転させます。スティックが設定できます。
     #define KEY_ARM_UP PS4.Up() //アームの根元を前へ進めたり、アーム先端を上げたりします。
     #define KEY_ARM_DW PS4.Down() //アームの根元を後へ進めたり、アーム先端を下げたりします。
     #define KEY_ARM_SW PS4.Share() //押されてる間、アームの根元を移動させます。ボタンが設定できます。
@@ -285,7 +301,6 @@ void loop() {
       }
 
       // スティックのキャリブレーション
-      /*
       if(KEY_ADJ_STRT){
         PS4.setFlashRate(200,200);
         deltasumcount+=1;
@@ -297,7 +312,7 @@ void loop() {
           deltasumcount = 0;
           deltasumstick = 0;
         }
-      }*/
+      }
     }
 
     // PS4に状態カラーセンサーの色などを反映

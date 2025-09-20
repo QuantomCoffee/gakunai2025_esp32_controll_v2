@@ -55,11 +55,27 @@ bool test_checksum(uint8_t*);
 float csq(float x){return x*x;};
 void registering_pos(uint8_t id,float radian_arg);
 
+// Githubより。
+#include <nvs.h>
+#include <nvs_flash.h>
+void clearNVS() {
+    int err;
+    err=nvs_flash_init();
+    Serial.println("nvs_flash_init: " + err);
+    err=nvs_flash_erase();
+    Serial.println("nvs_flash_erase: " + err);
+ }
+// https://github.com/espressif/arduino-esp32/issues/1941
+
+
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(115200); // to PC, or RaspberryPi
   Serial1.begin(1000000,134217756U,S1_RX,S1_TX);
   Serial2.begin(115200,134217756U,S2_RX,S2_TX); // to ESP32
+  clearNVS();
+  delay(50);
+  
   PS4.begin("90:15:06:7c:3e:26"); // PS4 Controller
 
   // for FEETECH Servo (STS3215 12V)
