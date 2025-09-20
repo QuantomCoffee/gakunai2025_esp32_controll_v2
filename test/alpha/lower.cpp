@@ -18,7 +18,7 @@
 #define MD_PIN2 25
 #define MD_PIN3 26
 #define MD_PIN_LOCK 27
-#define MV_SCALE 0.55
+#define MV_SCALE 0.35
 
 // define global status
 int prev_ms;
