@@ -14,10 +14,10 @@
 #define AUTO_SWITCH_MS 7500 // 起動後 何ms で自動に切り替えるか
 
 // アーム用のあれこれ 
-#define LEG_2 0.0 // サーボ2<->3 の長さ (mm)
-#define LEG_3 0.0 // サーボ3<->4 の長さ (mm)
-#define LEG_4 0.0 // サーボ4<->5 の長さ (mm)
-#define LEG_s 0.0 // サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
+#define LEG_2 10.0 // サーボ2<->3 の長さ (mm)
+#define LEG_3 100.0 // サーボ3<->4 の長さ (mm)
+#define LEG_4 200.0 // サーボ4<->5 の長さ (mm)
+#define LEG_s 200.0 // サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
 #define PRG_2 -0 // サーボ2 水平位置 (x1/4096回転)
 #define PRG_3 -0 // サーボ3 水平位置 (x1/4096回転)
 #define PRG_4 -0 // サーボ4 水平位置 (x1/4096回転)
@@ -260,7 +260,11 @@ void loop() {
         -PI-arm_arg;
 
       // 動かす。
-
+      #define ANTI_ROTPI 651.90 // 2048/PI
+      registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
+      registering_pos(3, (T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3);
+      registering_pos(4, (T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4);
+      registering_pos(5, (T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
 
     }else{
       PS4.setLed(0xff,0xb7,0x00); // 橙色
@@ -325,7 +329,7 @@ void loop() {
     movement[8]=culc_checksum(movement);
 
     // ESPにぶん投げる
-    Serial2.write(movement,8);
+    Serial2.write(movement,9);
     if ((loop_delta-millis())<25){
       delay(25);
     }
