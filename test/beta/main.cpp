@@ -15,13 +15,13 @@
 
 // アーム用のあれこれ 
 #define LEG_2 100.0 // サーボ2<->3 の長さ (mm)
-#define LEG_3 200.0 // サーボ3<->4 の長さ (mm)
-#define LEG_4 200.0 // サーボ4<->5 の長さ (mm)
-#define LEG_s 80000.0 // サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
-#define PRG_2 -0 // サーボ2 水平位置 (x1/4096回転)
-#define PRG_3 -0 // サーボ3 水平位置 (x1/4096回転)
-#define PRG_4 -0 // サーボ4 水平位置 (x1/4096回転)
-#define PRG_5 -0 // サーボ5 水平位置 (x1/4096回転)
+#define LEG_3 100.0 // サーボ3<->4 の長さ (mm)
+#define LEG_4 100.0 // サーボ4<->5 の長さ (mm)
+#define LEG_s 20000.0 // サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
+#define PRG_2 2047 // サーボ2 水平位置 (x1/4096回転)
+#define PRG_3 2047 // サーボ3 水平位置 (x1/4096回転)
+#define PRG_4 2047 // サーボ4 水平位置 (x1/4096回転)
+#define PRG_5 2047 // サーボ5 水平位置 (x1/4096回転)
 #define GER_2 1.0 // サーボ2 ギア比 (モーター 1:n 駆動)
 #define GER_3 1.0 // サーボ3 ギア比 (モーター 1:n 駆動)
 #define GER_4 1.0 // サーボ4 ギア比 (モーター 1:n 駆動)
@@ -30,6 +30,8 @@
 #define LIM_X_MAX 0.0 // 200.0 // Xの最大値mm
 #define LIM_Y_MIN 0.0 // -100.0 // Yの最小値mm
 #define LIM_Y_MAX 0.0 // 450.0 // Xの最大値mm
+#define TG_OPEN 0
+#define TG_CLOS 2047
 
 
 // define global status
