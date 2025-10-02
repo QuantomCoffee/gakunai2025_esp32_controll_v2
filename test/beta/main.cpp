@@ -21,11 +21,12 @@
 #define PRG_2 2047 // サーボ2 水平位置 (x1/4096回転)
 #define PRG_3 2047 // サーボ3 水平位置 (x1/4096回転)
 #define PRG_4 2047 // サーボ4 水平位置 (x1/4096回転)
-#define PRG_5 2047 // サーボ5 水平位置 (x1/4096回転)
+#define PRG_5 102 // サーボ5 水平位置 (x1/4096回転)
 #define GER_2 1.0 // サーボ2 ギア比 (モーター 1:n 駆動)
 #define GER_3 1.0 // サーボ3 ギア比 (モーター 1:n 駆動)
 #define GER_4 1.0 // サーボ4 ギア比 (モーター 1:n 駆動)
 #define GER_5 1.0 // サーボ5 ギア比 (モーター 1:n 駆動)
+#define ARM_RESETTING true // trueの場合、LIMの範囲はすべて自動で設定される。
 #define LIM_X_MIN 0.0 // 40.0 // Xの最小値mm
 #define LIM_X_MAX 0.0 // 200.0 // Xの最大値mm
 #define LIM_Y_MIN 0.0 // -100.0 // Yの最小値mm
@@ -96,13 +97,13 @@ void setup() {
   #define ROTPI 0.0015340 //=PI/2048
 
   arm_pos_x = 
-    LEG_2*cosf((DEG_3)*ROTPI) + 
-    LEG_3*cosf((DEG_3+DEG_4)*ROTPI) +
-    LEG_4*cosf((DEG_3+DEG_4+DEG_5)*ROTPI);
+    LEG_2*cosf((DEG_5)*ROTPI) + 
+    LEG_3*cosf((DEG_5+DEG_4)*ROTPI) +
+    LEG_4*cosf((DEG_5+DEG_4+DEG_3)*ROTPI);
   arm_pos_y = 
-    LEG_2*sinf((DEG_3)*ROTPI) + 
-    LEG_3*sinf((DEG_3+DEG_4)*ROTPI) +
-    LEG_4*sinf((DEG_3+DEG_4+DEG_5)*ROTPI);
+    LEG_2*sinf((DEG_5)*ROTPI) + 
+    LEG_3*sinf((DEG_5+DEG_4)*ROTPI) +
+    LEG_4*sinf((DEG_5+DEG_4+DEG_3)*ROTPI);
 
 
   // Servo.Ping(1); //アームは1～6を使用、ベルトコンベアは知らん。
@@ -206,6 +207,10 @@ void loop() {
       /*
         注意：PRG_3,4,5について
         これらは「水平時の角度データ」を示す。
+
+          5--4--3-2
+                  1
+
         角度を出す際はこの値を引く。
         例えばPRG_3=1024であれば、サーボ3が0であった場合-90°(-1024)を示す。
         もし図面とサーボ回転方向が逆であればギア比を負にすること。
@@ -227,11 +232,16 @@ void loop() {
       }
 
       // サイズ制限上の問題
-      if (arm_pos_x>LIM_X_MAX) {arm_pos_x=LIM_X_MAX;}
-      else if (arm_pos_x<LIM_X_MIN) {arm_pos_x=LIM_X_MIN;}
-      else if (arm_pos_y>LIM_Y_MAX) {arm_pos_y=LIM_Y_MAX;}
-      else if (arm_pos_y<LIM_Y_MIN) {arm_pos_y=LIM_Y_MIN;}
-      
+      if(ARM_RESETTING){
+        arm_pos_x=LEG_2+LEG_3+LEG_4;
+        arm_pos_y=0;
+      }else{
+        if (arm_pos_x>LIM_X_MAX) {arm_pos_x=LIM_X_MAX;}
+        else if (arm_pos_x<LIM_X_MIN) {arm_pos_x=LIM_X_MIN;}
+        else if (arm_pos_y>LIM_Y_MAX) {arm_pos_y=LIM_Y_MAX;}
+        else if (arm_pos_y<LIM_Y_MIN) {arm_pos_y=LIM_Y_MIN;}
+      }
+
       // 姿勢角 alpha
       float arm_arg = atanf(arm_pos_x/arm_pos_y)-(PI/2);
 
