@@ -97,13 +97,13 @@ void setup() {
   #define ROTPI 0.0015340 //=PI/2048
 
   arm_pos_x = 
-    LEG_2*cosf((DEG_5)*ROTPI) + 
+    LEG_4*cosf((DEG_5)*ROTPI) + 
     LEG_3*cosf((DEG_5+DEG_4)*ROTPI) +
-    LEG_4*cosf((DEG_5+DEG_4+DEG_3)*ROTPI);
+    LEG_2*cosf((DEG_5+DEG_4+DEG_3)*ROTPI);
   arm_pos_y = 
-    LEG_2*sinf((DEG_5)*ROTPI) + 
+    LEG_4*sinf((DEG_5)*ROTPI) + 
     LEG_3*sinf((DEG_5+DEG_4)*ROTPI) +
-    LEG_4*sinf((DEG_5+DEG_4+DEG_3)*ROTPI);
+    LEG_2*sinf((DEG_5+DEG_4+DEG_3)*ROTPI);
 
 
   // Servo.Ping(1); //アームは1～6を使用、ベルトコンベアは知らん。
