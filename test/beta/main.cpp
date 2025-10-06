@@ -21,7 +21,7 @@
 #define PRG_2 2047 // サーボ2 水平位置 (x1/4096回転)
 #define PRG_3 2047 // サーボ3 水平位置 (x1/4096回転)
 #define PRG_4 2047 // サーボ4 水平位置 (x1/4096回転)
-#define PRG_5 102 // サーボ5 水平位置 (x1/4096回転)
+#define PRG_5 410 // サーボ5 水平位置 (x1/4096回転)
 #define GER_2 1.0 // サーボ2 ギア比 (モーター 1:n 駆動)
 #define GER_3 1.0 // サーボ3 ギア比 (モーター 1:n 駆動)
 #define GER_4 1.0 // サーボ4 ギア比 (モーター 1:n 駆動)
@@ -47,7 +47,7 @@ int delta_sw_time;
 // define arm values
 float arm_pos_x; // アーム先端のX座標 (mm)
 float arm_pos_y; // アーム先端のY座標 (mm)
-
+bool is_arm_opened; // アーム開閉状況
 
 // put function declarations here:
 int myFunction(int, int);
@@ -105,6 +105,8 @@ void setup() {
     LEG_3*sinf((DEG_5+DEG_4)*ROTPI) +
     LEG_2*sinf((DEG_5+DEG_4+DEG_3)*ROTPI);
 
+  registering_pos(1,TG_OPEN);
+  is_arm_opened = true;
 
   // Servo.Ping(1); //アームは1～6を使用、ベルトコンベアは知らん。
   prev_ms = millis(); 
@@ -142,7 +144,9 @@ void loop() {
     #define KEY_ROTATE_CCW PS4.Left() //左(上から見て反時計回り)へ回転移動します。ボタンが設定できます。
     #define KEY_DRIVE_FRONT PS4.Up() //前方へ進む。ボタンが設定できます。
     #define KEY_DRIVE_BACK PS4.Down() //後方へ進む。ボタンが設定できます。
-    #define KEY_ADJ_STRT PS4.Share() // 押している間に、下記STICK_ROTATEの調整を行います。
+    
+    // MODE 1+| キャリブレーション
+    #define KEY_ADJ_STRT PS4.Share() // 押している間に、[STICK_ROTATE]の調整を行います。
 
     // MODE 2 | アームメイン用 キーコンフィグ
     #define KEY_ARM_HOLD PS4.Circle() //アームでつかむ・はなすを切り替えます。はなす場合は後述の解放キーを同時に押す必要があります。
@@ -157,8 +161,10 @@ void loop() {
     #define KEY_RAIL_ON PS4.Square() //レールを起動します
     #define KEY_RAIL_OFF PS4.Triangle() //レールをオフにします
 
+    // MODE 切り替え
     #define KEY_MODE_SW PS4.Options() //単押しで運転モードとアームモードを切り替えます。長押しすると自動化を起動します。
     #define KEY_MODE_SW_TM 2000 // ↑の長押しの基準
+
 
     static int mode_ = 1;
     static int mode_sw_bt = 0; // 押されたらその時のmillis()に書き換える
@@ -190,7 +196,7 @@ void loop() {
     if(mode_==2){
       // やだああああああああああああああああああああ
       PS4.setLed(0x30,0xff,0x30);
-      if(KEY_ROTATE_CCW&&KEY_ROTATE_CW){ // 回転移動指定と前後移動指定が同時に押されたとき
+      if(KEY_ROTATE_CCW&&KEY_ROTATE_CW){ // 回転移動指定が同時に押されたとき
         Serial.println("WHAT???");
       }else if(KEY_ROTATE_CW){ // 時計回りに回転
         movement[1]=0x21;
@@ -198,8 +204,8 @@ void loop() {
       }else if(KEY_ROTATE_CCW){ // 反時計回りに回転
         movement[1]=0x21;
         movement[4]=0x80-(GUAGE_DRIVE_ACCEL>>1);
-      }else { // なんもないなら止めようぜ
-        movement[1]=0x2f;
+      }else {
+        movement[4]=0x80+round(GUAGE_DRIVE_ACCEL*(STICK_ROTATE*100-adjusting_stick_100x)/12800);
       }
 
       // put アームの処理 here.
@@ -208,8 +214,8 @@ void loop() {
         注意：PRG_3,4,5について
         これらは「水平時の角度データ」を示す。
 
-          5--4--3-2
-                  1
+          5---4---3--2
+   ⌜       ⌝         1
 
         角度を出す際はこの値を引く。
         例えばPRG_3=1024であれば、サーボ3が0であった場合-90°(-1024)を示す。
@@ -233,52 +239,73 @@ void loop() {
 
       // サイズ制限上の問題
       if(ARM_RESETTING){
-        arm_pos_x=LEG_2+LEG_3+LEG_4;
-        arm_pos_y=0;
+        registering_pos(2,PRG_2);
+        registering_pos(3,PRG_3);
+        registering_pos(4,PRG_4);
+        registering_pos(5,PRG_5);
       }else{
         if (arm_pos_x>LIM_X_MAX) {arm_pos_x=LIM_X_MAX;}
         else if (arm_pos_x<LIM_X_MIN) {arm_pos_x=LIM_X_MIN;}
         else if (arm_pos_y>LIM_Y_MAX) {arm_pos_y=LIM_Y_MAX;}
         else if (arm_pos_y<LIM_Y_MIN) {arm_pos_y=LIM_Y_MIN;}
+        
+        // 姿勢角 alpha
+        float arm_arg = atanf(arm_pos_x/arm_pos_y)-(PI/2);
+
+        float T_ARG_5,T_ARG_4,T_ARG_3,T_ARG_2;
+        float CALC_A = arm_pos_x-(LEG_2*cosf(arm_arg));
+        float CALC_B = arm_pos_y-(LEG_2*sinf(arm_arg));
+        float C_A2_B2 = csq(CALC_A)+csq(CALC_B);
+        float CALC_G = atanf(CALC_B/CALC_A);
+
+        // 計算フェーズ
+        T_ARG_5 =
+          CALC_G +
+          acosf(
+            (C_A2_B2+LEG_s)/
+            (2*LEG_4*sqrtf(C_A2_B2))
+          );
+        
+        float CALC_H = atanf(
+            (CALC_B-(LEG_4*sinf(T_ARG_5)))/
+            (CALC_A-(LEG_4*cosf(T_ARG_5)))
+          );
+        
+        T_ARG_4 = 
+          -T_ARG_5 + CALC_H;
+        T_ARG_3 = 
+          arm_arg - CALC_H;
+        T_ARG_2 = 
+          -PI-arm_arg;
+
+        // 動かす。
+        #define ANTI_ROTPI 651.90 // 2048/PI
+        registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
+        registering_pos(3, (T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3);
+        registering_pos(4, (T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4);
+        registering_pos(5, (T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
       }
 
-      // 姿勢角 alpha
-      float arm_arg = atanf(arm_pos_x/arm_pos_y)-(PI/2);
+      static bool key_arm_holding = false;
+      if(KEY_ARM_HOLD){
+        PS4.setLed(0xff,0x00,0xff);          
+        PS4.setFlashRate(200,200);
+        if(KEY_ARM_REL_LOCK&&!is_arm_opened&&!key_arm_holding){ // しまってるんだったら...
+          is_arm_opened=true;
+          key_arm_holding=true;
+        }else if(is_arm_opened&&!key_arm_holding){
+          is_arm_opened=false;
+          key_arm_holding=true;
+        }
+      }else{
+        PS4.setFlashRate(0,0);
+        key_arm_holding=false;
+      }
 
-      float T_ARG_5,T_ARG_4,T_ARG_3,T_ARG_2;
-      float CALC_A = arm_pos_x-(LEG_2*cosf(arm_arg));
-      float CALC_B = arm_pos_y-(LEG_2*sinf(arm_arg));
-      float C_A2_B2 = csq(CALC_A)+csq(CALC_B);
-      float CALC_G = atanf(CALC_B/CALC_A);
+      if(is_arm_opened){registering_pos(1,TG_OPEN);}
+      else{registering_pos(1,TG_CLOS);}
 
-      // 計算フェーズ
-      T_ARG_5 =
-        CALC_G +
-        acosf(
-          (C_A2_B2+LEG_s)/
-          (2*LEG_4*sqrtf(C_A2_B2))
-        );
-      
-      float CALC_H = atanf(
-          (CALC_B-(LEG_4*sinf(T_ARG_5)))/
-          (CALC_A-(LEG_4*cosf(T_ARG_5)))
-        );
-      
-      T_ARG_4 = 
-        -T_ARG_5 + CALC_H;
-      T_ARG_3 = 
-        arm_arg - CALC_H;
-      T_ARG_2 = 
-        -PI-arm_arg;
-
-      // 動かす。
-      #define ANTI_ROTPI 651.90 // 2048/PI
-      registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
-      registering_pos(3, (T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3);
-      registering_pos(4, (T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4);
-      registering_pos(5, (T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
-
-    }else{
+    }else if(mode_==1){
       PS4.setLed(0xff,0xb7,0x00); // 橙色
 
       // 加速する。優先度は回転>微調整>スティック
@@ -329,6 +356,8 @@ void loop() {
           deltasumstick = 0;
         }
       }
+    }else{
+      mode_=1;
     }
 
     // PS4に状態カラーセンサーの色などを反映
@@ -392,8 +421,9 @@ bool test_checksum(uint8_t* data){
   return (data[7]==culc_checksum(data));
 };
 
-void registering_pos(uint8_t id,float radian_arg){
-  int nxtpos = roundf(radian_arg*651.899);
+void registering_pos(uint8_t id,float arg){
+  
+  int nxtpos = arg + 0; /*roundf(radian_arg*651.899);*/
   int nowpos = Servo.ReadPos(id);
   while (nxtpos<0) {
     nxtpos+=4096;
