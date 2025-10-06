@@ -14,30 +14,29 @@
 #define AUTO_SWITCH_MS 7500 // 起動後 何ms で自動に切り替えるか
 
 // アーム用のあれこれ 
-#define LEG_2 137.8 // サーボ2<->3 の長さ (mm)
-#define LEG_3 187.3 // サーボ3<->4 の長さ (mm)
-#define LEG_4 189.5 // サーボ4<->5 の長さ (mm)
-#define LEG_s 70991.54 // サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
+#define LEG_2 137.8f // サーボ2<->3 の長さ (mm)
+#define LEG_3 187.3f // サーボ3<->4 の長さ (mm)
+#define LEG_4 189.5f // サーボ4<->5 の長さ (mm)
+#define LEG_s 70991.54f // サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
 #define PRG_2 2047 // サーボ2 水平位置 (x1/4096回転)
 #define PRG_3 2029 // サーボ3 水平位置 (x1/4096回転)
 #define PRG_4 2127 // サーボ4 水平位置 (x1/4096回転)
 #define PRG_5 3600 // サーボ5 水平位置 (x1/4096回転)
-#define GER_2 -1.0 // サーボ2 ギア比 (モーター 1:n 駆動)
-#define GER_3 -1.0 // サーボ3 ギア比 (モーター 1:n 駆動)
-#define GER_4 -1.0 // サーボ4 ギア比 (モーター 1:n 駆動)
-#define GER_5 -1.0 // サーボ5 ギア比 (モーター 1:n 駆動)
+#define GER_2 -1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
+#define GER_3 -1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
+#define GER_4 -1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
+#define GER_5 -1.0f // サーボ5 ギア比 (モーター 1:n 駆動)
 #define ARM_RESETTING true // trueの場合、LIMの範囲はすべて自動で設定される。
-#define LIM_X_MIN 0.0 // 40.0 // Xの最小値mm
-#define LIM_X_MAX 0.0 // 200.0 // Xの最大値mm
-#define LIM_Y_MIN 0.0 // -100.0 // Yの最小値mm
-#define LIM_Y_MAX 0.0 // 450.0 // Xの最大値mm
+#define LIM_X_MIN 0.0f // 40.0f   // Xの最小値mm
+#define LIM_X_MAX 0.0f // 300.0f  // Xの最大値mm
+#define LIM_Y_MIN 0.0f // -100.0f // Yの最小値mm
+#define LIM_Y_MAX 0.0f // 450.0f  // Yの最大値mm
 #define TG_OPEN 0
 #define TG_CLOS 2047
 
 
 // define global status
 bool automationEnable = false; // falseの場合は自動化しない (ラズパイは虚空に送り続ける)
-bool arm_status; // これは後で位置を確認するので未定義。
 SMS_STS Servo;
 int prev_ms;  // PS4コントローラー通信タイムアウト
 int loop_delta; // コントロールの時間差分
@@ -279,11 +278,13 @@ void loop() {
           -PI-arm_arg;
 
         // 動かす。
-        #define ANTI_ROTPI 651.90 // 2048/PI
+        #define ANTI_ROTPI 651.90f // 2048/PI
         registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
         registering_pos(3, (T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3);
         registering_pos(4, (T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4);
         registering_pos(5, (T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
+        
+        Serial.printf("TARGET: (%f, %f) \nMTR %f,%f,%f,%f,%f \n",arm_pos_x,arm_pos_y,-1.0f,(T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2,(T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3,(T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4,(T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
       }
 
       static bool key_arm_holding = false;
@@ -431,5 +432,5 @@ void registering_pos(uint8_t id,float arg){
   while (nxtpos>4096) {
     nxtpos-=4096;
   }
-  Servo.WritePosEx(id, nxtpos, 0);
+  Servo.WritePosEx(id, nxtpos, 40);
 }
