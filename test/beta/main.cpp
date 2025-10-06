@@ -27,8 +27,8 @@
 #define GER_4 -1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
 #define GER_5 -1.0f // サーボ5 ギア比 (モーター 1:n 駆動)
 #define ARM_RESETTING true // trueの場合、LIMの範囲はすべて自動で設定される。
-#define LIM_X_MIN 0.0f // 40.0f   // Xの最小値mm
-#define LIM_X_MAX 0.0f // 300.0f  // Xの最大値mm
+#define LIM_X_MIN 60.0f // 40.0f   // Xの最小値mm
+#define LIM_X_MAX 60.0f // 300.0f  // Xの最大値mm
 #define LIM_Y_MIN 0.0f // -100.0f // Yの最小値mm
 #define LIM_Y_MAX 0.0f // 450.0f  // Yの最大値mm
 #define TG_OPEN 0
