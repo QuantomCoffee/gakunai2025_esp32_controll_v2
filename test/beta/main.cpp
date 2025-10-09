@@ -17,18 +17,20 @@
 #define LEG_2 137.8f // サーボ2<->3 の長さ (mm)
 #define LEG_3 187.3f // サーボ3<->4 の長さ (mm)
 #define LEG_4 189.5f // サーボ4<->5 の長さ (mm)
-#define LEG_s 70991.54f // サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
+#define LEG_s 828.96f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
 #define PRG_2 2047 // サーボ2 水平位置 (x1/4096回転)
 #define PRG_3 2029 // サーボ3 水平位置 (x1/4096回転)
 #define PRG_4 2127 // サーボ4 水平位置 (x1/4096回転)
 #define PRG_5 3600 // サーボ5 水平位置 (x1/4096回転)
+#define PRG_6 400  // サーボ6 水平位置 (x1/4096回転)
 #define GER_2 -1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
 #define GER_3 -1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
 #define GER_4 -1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
-#define GER_5 -1.0f // サーボ5 ギア比 (モーター 1:n 駆動)
-#define ARM_RESETTING true // trueの場合、LIMの範囲はすべて自動で設定される。
-#define LIM_X_MIN 60.0f // 40.0f   // Xの最小値mm
-#define LIM_X_MAX 60.0f // 300.0f  // Xの最大値mm
+#define GER_5 2.0f // サーボ5 ギア比 (モーター 1:n 駆動) 6は負
+#define ARM_RESETTING false // trueの場合、LIMの範囲はすべて自動で設定される。
+#define DEBUG_MODE true
+#define LIM_X_MIN 160.0f // 40.0f   // Xの最小値mm
+#define LIM_X_MAX 160.0f // 300.0f  // Xの最大値mm
 #define LIM_Y_MIN 0.0f // -100.0f // Yの最小値mm
 #define LIM_Y_MAX 0.0f // 450.0f  // Yの最大値mm
 #define TG_OPEN 0
@@ -221,19 +223,31 @@ void loop() {
         もし図面とサーボ回転方向が逆であればギア比を負にすること。
       */
 
-      // アームの最初の位置はsetupで計算済み。
-      // というかTimeoutの可能性があるので最初しかやっちゃダメ
+      // アームの位置を取得
+      
+      // アーム角度計算 (1/4096回転単位)
+      float DEG_3 = (Servo.Ping(3)==-1) ? 0 : (Servo.ReadPos(3)-PRG_3)/GER_3;
+      float DEG_4 = (Servo.Ping(4)==-1) ? 0 : (Servo.ReadPos(4)-PRG_4)/GER_4;
+      float DEG_5 = (Servo.Ping(5)==-1) ? 0 : (Servo.ReadPos(5)-PRG_5)/GER_5;
+
+      // アーム現在地取得
+      // cos,sinはラジアンを引数に取るので、PI/2048をかけて-4096~4096を-2pi～2piへ変換
+
+      #define ROTPI 0.0015340 //=PI/2048
+
+      float arm_pos_x_n = arm_pos_x+0.0; 
+      float arm_pos_y_n = arm_pos_y+0.0;
 
       // 差分計算
       if(abs(STICK_ARM_FRONT)>=24){
-        arm_pos_x += STICK_ARM_FRONT * 0.10 /*(m/s)*/ * (millis()-loop_delta); 
+        arm_pos_x_n += STICK_ARM_FRONT * 0.15 /*(m/s)*/ * (millis()-loop_delta); 
       }
       if(KEY_ARM_UP&&KEY_ARM_DW){
         // what?
       }else if(KEY_ARM_UP){
-        arm_pos_y += 0.10 /*(m/s)*/ * (millis()-loop_delta); 
+        arm_pos_y_n += 0.15 /*(m/s)*/ * (millis()-loop_delta); 
       }else if(KEY_ARM_DW){
-        arm_pos_y -= 0.10 /*(m/s)*/ * (millis()-loop_delta); 
+        arm_pos_y_n -= 0.15 /*(m/s)*/ * (millis()-loop_delta); 
       }
 
       // サイズ制限上の問題
@@ -243,31 +257,41 @@ void loop() {
         registering_pos(4,PRG_4);
         registering_pos(5,PRG_5);
       }else{
-        if (arm_pos_x>LIM_X_MAX) {arm_pos_x=LIM_X_MAX;}
-        else if (arm_pos_x<LIM_X_MIN) {arm_pos_x=LIM_X_MIN;}
-        else if (arm_pos_y>LIM_Y_MAX) {arm_pos_y=LIM_Y_MAX;}
-        else if (arm_pos_y<LIM_Y_MIN) {arm_pos_y=LIM_Y_MIN;}
-        
+        if (arm_pos_x_n>LIM_X_MAX) {arm_pos_x_n=LIM_X_MAX;}
+        else if (arm_pos_x_n<LIM_X_MIN) {arm_pos_x_n=LIM_X_MIN;}
+        else if (arm_pos_y_n>LIM_Y_MAX) {arm_pos_y_n=LIM_Y_MAX;}
+        else if (arm_pos_y_n<LIM_Y_MIN) {arm_pos_y_n=LIM_Y_MIN;}
+
         // 姿勢角 alpha
-        float arm_arg = atanf(arm_pos_x/arm_pos_y)-(PI/2);
+        float arm_arg = atanf(arm_pos_x_n/(arm_pos_y_n+1e-6))-(PI/2);
 
         float T_ARG_5,T_ARG_4,T_ARG_3,T_ARG_2;
-        float CALC_A = arm_pos_x-(LEG_2*cosf(arm_arg));
-        float CALC_B = arm_pos_y-(LEG_2*sinf(arm_arg));
+        float CALC_A = arm_pos_x_n-(LEG_2*cosf(arm_arg));
+        float CALC_B = arm_pos_y_n-(LEG_2*sinf(arm_arg));
         float C_A2_B2 = csq(CALC_A)+csq(CALC_B);
         float CALC_G = atanf(CALC_B/CALC_A);
+
+        if(((C_A2_B2+LEG_s)/(2*LEG_4*sqrtf(C_A2_B2)+1e-8))>=1){
+          arm_pos_x_n=arm_pos_x;
+          arm_pos_y_n=arm_pos_y;
+          arm_arg = atanf(arm_pos_x/(arm_pos_y+1e-6))-(PI/2);
+          CALC_A = arm_pos_x-(LEG_2*cosf(arm_arg));
+          CALC_B = arm_pos_y-(LEG_2*sinf(arm_arg));
+          C_A2_B2 = csq(CALC_A)+csq(CALC_B);
+          CALC_G = atanf(CALC_B/CALC_A);
+        }
 
         // 計算フェーズ
         T_ARG_5 =
           CALC_G +
           acosf(
             (C_A2_B2+LEG_s)/
-            (2*LEG_4*sqrtf(C_A2_B2))
+            (2*LEG_4*sqrtf(C_A2_B2)+1e-8)
           );
         
         float CALC_H = atanf(
             (CALC_B-(LEG_4*sinf(T_ARG_5)))/
-            (CALC_A-(LEG_4*cosf(T_ARG_5)))
+            ((CALC_A-(LEG_4*cosf(T_ARG_5)))+1e-8)
           );
         
         T_ARG_4 = 
@@ -283,8 +307,13 @@ void loop() {
         registering_pos(3, (T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3);
         registering_pos(4, (T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4);
         registering_pos(5, (T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
+        registering_pos(6, (T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6);
         
-        Serial.printf("TARGET: (%f, %f) \nMTR %f,%f,%f,%f,%f \n",arm_pos_x,arm_pos_y,-1.0f,(T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2,(T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3,(T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4,(T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
+
+        Serial.printf("TARGET: (%f, %f) a=%f \nMTR %f,%f,%f,%f,%f,%f \n",arm_pos_x_n,arm_pos_y_n,arm_arg,-1.0f,(T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2,(T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3,(T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4,(T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5,(T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6);
+        if(DEBUG_MODE){
+          Serial.printf("VALS:\n A=%g\n B=%g\n G=%g\n H=%g",CALC_A,CALC_B,CALC_G,CALC_H);
+        }
       }
 
       static bool key_arm_holding = false;
@@ -423,7 +452,6 @@ bool test_checksum(uint8_t* data){
 };
 
 void registering_pos(uint8_t id,float arg){
-  
   int nxtpos = arg + 0; /*roundf(radian_arg*651.899);*/
   int nowpos = Servo.ReadPos(id);
   while (nxtpos<0) {
@@ -432,5 +460,5 @@ void registering_pos(uint8_t id,float arg){
   while (nxtpos>4096) {
     nxtpos-=4096;
   }
-  Servo.WritePosEx(id, nxtpos, 40);
+  Servo.WritePosEx(id, nxtpos, 1000);
 }
