@@ -172,10 +172,10 @@ int move_liner(int speed, int dx, int dy) {
     
     */
     // モーターへ方向を入力               //  前 - 右
-    ledcWrite(0, 128+round((-dxad-dyad)*MV_SCALE)); //  cw - cw
-    ledcWrite(1, 128+round((+dxad-dyad)*MV_SCALE)); // ccw - cw
-    ledcWrite(2, 128+round((+dxad+dyad)*MV_SCALE)); // ccw - ccw
-    ledcWrite(3, 128+round((-dxad+dyad)*MV_SCALE)); //  cw - ccw
+    ledcWrite(0, round(127.5+(-dxad-dyad)*MV_SCALE)); //  cw - cw
+    ledcWrite(1, round(127.5+(+dxad-dyad)*MV_SCALE)); // ccw - cw
+    ledcWrite(2, round(127.5+(+dxad+dyad)*MV_SCALE)); // ccw - ccw
+    ledcWrite(3, round(127.5+(-dxad+dyad)*MV_SCALE)); //  cw - ccw
 
     if(!motor_powered){ // モーター起動
       digitalWrite(MD_PIN_LOCK,HIGH);
@@ -199,10 +199,10 @@ int move_rotate(int speedClockwise) {
     // 誤動作防止のため、モーターのONは最後に切り替える。
     
     // モーターへ方向を入力
-    ledcWrite(0, 128+speedClockwise);
-    ledcWrite(1, 128+speedClockwise);
-    //ledcWrite(2, 128+speedClockwise);
-    //ledcWrite(3, 128+speedClockwise);
+    ledcWrite(0, roundf(127.5+(speedClockwise*MV_SCALE)));
+    ledcWrite(1, roundf(127.5+(speedClockwise*MV_SCALE)));
+    ledcWrite(2, roundf(127.5+(speedClockwise*MV_SCALE)));
+    ledcWrite(3, roundf(127.5+(speedClockwise*MV_SCALE)));
 
     if(!motor_powered){ // モーター起動
       digitalWrite(MD_PIN_LOCK,HIGH);
