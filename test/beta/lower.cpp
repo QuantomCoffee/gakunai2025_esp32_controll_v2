@@ -20,6 +20,11 @@
 #define MD_PIN_LOCK 27
 #define MV_SCALE 0.35
 
+#define DEF_ADJ_0 1.0f
+#define DEF_ADJ_1 1.0f
+#define DEF_ADJ_2 1.0f
+#define DEF_ADJ_3 1.0f
+
 // define global status
 int prev_ms;
 int sw_time;
@@ -37,8 +42,8 @@ int myFunction(int, int);
 uint8_t culc_checksum(uint8_t*);
 bool test_checksum(uint8_t*);
 
-int move_liner(int speed, int dx, int dy);
-int move_rotate(int speedClockwise);
+int move_liner(int speed, int dx, int dy, bool reb=false);
+int move_rotate(int speedClockwise, bool reb=false);
 
 void setup() {
   // put your setup code here, to run once:
@@ -149,7 +154,7 @@ bool test_checksum(uint8_t* data){
   return (data[8]==culc_checksum(data));
 };
 
-int move_liner(int speed, int dx, int dy) {
+int move_liner(int speed, int dx, int dy, bool reb=false) {
   //Serial.printf("Move Liner : %d to angle %d\n",speed,axis);
   if(speed==0){
     digitalWrite(MD_PIN_LOCK,LOW);
@@ -159,6 +164,9 @@ int move_liner(int speed, int dx, int dy) {
     // memo; ledcは8bitにおいて0-255.
     // また、Locked-Antiphase PWM方式を参考にするので、0寄りがcw,256寄りがccw.
     // 誤動作防止のため、モーターのONは最後に切り替える。
+    
+    if(reb){digitalWrite(MD_PIN_LOCK,LOW);} // 一度切る
+
     double dxad = (dx*speed)/128.0;
     double dyad = (dy*speed)/128.0;
 
@@ -171,16 +179,16 @@ int move_liner(int speed, int dx, int dy) {
         #3 ^ ^ #2
     
     */
-    // モーターへ方向を入力               //  前 - 右
-    ledcWrite(0, round(127.5+(-dxad-dyad)*MV_SCALE)); //  cw - cw
-    ledcWrite(1, round(127.5+(+dxad-dyad)*MV_SCALE)); // ccw - cw
-    ledcWrite(2, round(127.5+(+dxad+dyad)*MV_SCALE)); // ccw - ccw
-    ledcWrite(3, round(127.5+(-dxad+dyad)*MV_SCALE)); //  cw - ccw
 
-    if(!motor_powered){ // モーター起動
-      digitalWrite(MD_PIN_LOCK,HIGH);
-      motor_powered = true; 
-    }
+    // モーターへ方向を入力               //  前 - 右
+    ledcWrite(0, round(127.5+(-dxad-dyad)*MV_SCALE*DEF_ADJ_0)); //  cw - cw
+    ledcWrite(1, round(127.5+(+dxad-dyad)*MV_SCALE*DEF_ADJ_1)); // ccw - cw
+    ledcWrite(2, round(127.5+(+dxad+dyad)*MV_SCALE*DEF_ADJ_2)); // ccw - ccw
+    ledcWrite(3, round(127.5+(-dxad+dyad)*MV_SCALE*DEF_ADJ_3)); //  cw - ccw
+
+    // モーター起動
+    digitalWrite(MD_PIN_LOCK,HIGH);
+    motor_powered = true;
 
     return 0;
   }else{
@@ -188,7 +196,7 @@ int move_liner(int speed, int dx, int dy) {
   }
 }
 
-int move_rotate(int speedClockwise) {
+int move_rotate(int speedClockwise, bool reb=false) {
   if(speedClockwise==0){
     digitalWrite(MD_PIN_LOCK,LOW);
     motor_powered = false;
@@ -198,16 +206,17 @@ int move_rotate(int speedClockwise) {
     // また、Locked-Antiphase PWM方式を参考にするので、0寄りがcw,256寄りがccw.
     // 誤動作防止のため、モーターのONは最後に切り替える。
     
-    // モーターへ方向を入力
-    ledcWrite(0, roundf(127.5+(speedClockwise*MV_SCALE)));
-    ledcWrite(1, roundf(127.5+(speedClockwise*MV_SCALE)));
-    ledcWrite(2, roundf(127.5+(speedClockwise*MV_SCALE)));
-    ledcWrite(3, roundf(127.5+(speedClockwise*MV_SCALE)));
+    if(reb){digitalWrite(MD_PIN_LOCK,LOW);} // 一度切る
 
-    if(!motor_powered){ // モーター起動
-      digitalWrite(MD_PIN_LOCK,HIGH);
-      motor_powered = true; 
-    }
+    // モーターへ方向を入力
+    ledcWrite(0, roundf(127.5+(speedClockwise*MV_SCALE*DEF_ADJ_0)));
+    ledcWrite(1, roundf(127.5+(speedClockwise*MV_SCALE*DEF_ADJ_1)));
+    ledcWrite(2, roundf(127.5+(speedClockwise*MV_SCALE*DEF_ADJ_2)));
+    ledcWrite(3, roundf(127.5+(speedClockwise*MV_SCALE*DEF_ADJ_3)));
+
+    // モーター起動
+    digitalWrite(MD_PIN_LOCK,HIGH);
+    motor_powered = true; 
 
     return 0;
   }else{
