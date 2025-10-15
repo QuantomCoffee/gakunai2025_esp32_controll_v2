@@ -120,10 +120,10 @@ void loop() {
   // put your main code here, to run repeatedly:
 
   uint8_t movement[9] = {0x58,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0};
-  // 行動パターンを決めます。1バイト目は0x58で固定です。8バイト目はチェックサムです。
+  // 行動パターンを決めます。1バイト目は0x58で固定です。9バイト目はチェックサムです。
   // movementは基本的にそのままESP32(下)に転送します。
 
-  // uint8_t senddata[8] = {0x58,0xfe,0x0,0x0,0x0,0x0,0x0,0x0};
+  // uint8_t senddata[9] = {0x58,0xfe,0x0,0x0,0x0,0x0,0x0,0x0,0x0};
   // ラズパイ/PCに返却するデータです。
   // 余裕がないので消えました。
 
@@ -158,9 +158,19 @@ void loop() {
     #define KEY_ARM_DW PS4.Down() //アームの根元を後へ進めたり、アーム先端を下げたりします。
     #define KEY_ARM_SW PS4.Share() //押されてる間、アームの根元を移動させます。ボタンが設定できます。
 
+    // MODE 2a| 応急処置
+    #define KEY_ARM_PRESET_1 PS4.L1() // プリセット1へ移動させます。
+    #define KEY_ARM_PRESET_2 PS4.L2() // プリセット2へ移動させます。
+    #define KEY_ARM_PRESET_3 PS4.PSButton() // プリセット3へ移動させます。
+
+    #define ARMPRESET1 [0.0f,0.0f] /*X, Y(mm)*/ 
+    #define ARMPRESET2 [0.0f,0.0f] /*X, Y(mm)*/ 
+    #define ARMPRESET3 [0.0f,0.0f] /*X, Y(mm)*/ 
+
+
     // MODE 2+| 予備
-    #define KEY_RAIL_ON PS4.Square() //レールを起動します
-    #define KEY_RAIL_OFF PS4.Triangle() //レールをオフにします
+    // #define KEY_RAIL_ON PS4.Square() //レールを起動します
+    // #define KEY_RAIL_OFF PS4.Triangle() //レールをオフにします
 
     // MODE 切り替え
     #define KEY_MODE_SW PS4.Options() //単押しで運転モードとアームモードを切り替えます。長押しすると自動化を起動します。
@@ -240,14 +250,14 @@ void loop() {
 
       // 差分計算
       if(abs(STICK_ARM_FRONT)>=24){
-        arm_pos_x_n += STICK_ARM_FRONT * 0.15 /*(m/s)*/ * (millis()-loop_delta); 
+        arm_pos_x_n += (STICK_ARM_FRONT/128.0f) * 0.15f /*(m/s)*/ * (millis()-loop_delta); 
       }
       if(KEY_ARM_UP&&KEY_ARM_DW){
         // what?
       }else if(KEY_ARM_UP){
-        arm_pos_y_n += 0.15 /*(m/s)*/ * (millis()-loop_delta); 
+        arm_pos_y_n += 0.15f /*(m/s)*/ * (millis()-loop_delta); 
       }else if(KEY_ARM_DW){
-        arm_pos_y_n -= 0.15 /*(m/s)*/ * (millis()-loop_delta); 
+        arm_pos_y_n -= 0.15f /*(m/s)*/ * (millis()-loop_delta); 
       }
 
       // サイズ制限上の問題
@@ -263,7 +273,7 @@ void loop() {
         else if (arm_pos_y_n<LIM_Y_MIN) {arm_pos_y_n=LIM_Y_MIN;}
 
         // 姿勢角 alpha
-        float arm_arg = atanf(arm_pos_x_n/(arm_pos_y_n+1e-6))-(PI/2);
+        float arm_arg = atanf(arm_pos_x_n/(arm_pos_y_n+1e-8f))-(PI/2);
 
         float T_ARG_5,T_ARG_4,T_ARG_3,T_ARG_2;
         float CALC_A = arm_pos_x_n-(LEG_2*cosf(arm_arg));
@@ -271,10 +281,10 @@ void loop() {
         float C_A2_B2 = csq(CALC_A)+csq(CALC_B);
         float CALC_G = atanf(CALC_B/CALC_A);
 
-        if(((C_A2_B2+LEG_s)/(2*LEG_4*sqrtf(C_A2_B2)+1e-8))>=1){
+        if(((C_A2_B2+LEG_s)/(2*LEG_4*sqrtf(C_A2_B2)+1e-8f))>=1){
           arm_pos_x_n=arm_pos_x;
           arm_pos_y_n=arm_pos_y;
-          arm_arg = atanf(arm_pos_x/(arm_pos_y+1e-6))-(PI/2);
+          arm_arg = atanf(arm_pos_x/(arm_pos_y+1e-8f))-(PI/2);
           CALC_A = arm_pos_x-(LEG_2*cosf(arm_arg));
           CALC_B = arm_pos_y-(LEG_2*sinf(arm_arg));
           C_A2_B2 = csq(CALC_A)+csq(CALC_B);
@@ -286,12 +296,12 @@ void loop() {
           CALC_G +
           acosf(
             (C_A2_B2+LEG_s)/
-            (2*LEG_4*sqrtf(C_A2_B2)+1e-8)
+            (2*LEG_4*sqrtf(C_A2_B2)+1e-8f)
           );
         
         float CALC_H = atanf(
             (CALC_B-(LEG_4*sinf(T_ARG_5)))/
-            ((CALC_A-(LEG_4*cosf(T_ARG_5)))+1e-8)
+            ((CALC_A-(LEG_4*cosf(T_ARG_5)))+1e-8f)
           );
         
         T_ARG_4 = 
@@ -303,6 +313,7 @@ void loop() {
 
         // 動かす。
         #define ANTI_ROTPI 651.90f // 2048/PI
+
         registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
         registering_pos(3, (T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3);
         registering_pos(4, (T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4);
