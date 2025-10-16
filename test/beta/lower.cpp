@@ -71,10 +71,10 @@ void setup() {
   pinMode(MD_PIN3,OUTPUT); // 3番モーター
 
   digitalWrite(MD_PIN_LOCK,LOW);
-  ledcSetup(0, 9600, 8); ledcAttachPin(MD_PIN0, 0); ledcWrite(0, 128);
-  ledcSetup(1, 9600, 8); ledcAttachPin(MD_PIN1, 1); ledcWrite(1, 128);
-  ledcSetup(2, 9600, 8); ledcAttachPin(MD_PIN2, 2); ledcWrite(2, 128);
-  ledcSetup(3, 9600, 8); ledcAttachPin(MD_PIN3, 3); ledcWrite(3, 128);
+  ledcSetup(0, 9600, 12); ledcAttachPin(MD_PIN0, 0); ledcWrite(0, 2048);
+  ledcSetup(1, 9600, 12); ledcAttachPin(MD_PIN1, 1); ledcWrite(1, 2048);
+  ledcSetup(2, 9600, 12); ledcAttachPin(MD_PIN2, 2); ledcWrite(2, 2048);
+  ledcSetup(3, 9600, 12); ledcAttachPin(MD_PIN3, 3); ledcWrite(3, 2048);
 
 
   // for FEETECH Servo (STS3215 12V)
@@ -154,7 +154,7 @@ bool test_checksum(uint8_t* data){
   return (data[8]==culc_checksum(data));
 };
 
-int move_liner(int speed, int dx, int dy, bool reb=false) {
+int move_liner(int speed, int dx, int dy, bool reb) {
   //Serial.printf("Move Liner : %d to angle %d\n",speed,axis);
   if(speed==0){
     digitalWrite(MD_PIN_LOCK,LOW);
@@ -167,8 +167,8 @@ int move_liner(int speed, int dx, int dy, bool reb=false) {
     
     if(reb){digitalWrite(MD_PIN_LOCK,LOW);} // 一度切る
 
-    double dxad = (dx*speed)/128.0;
-    double dyad = (dy*speed)/128.0;
+    double dxad = (dx*speed)/8.0;
+    double dyad = (dy*speed)/8.0;
 
     /*
         モーター配置
@@ -181,10 +181,10 @@ int move_liner(int speed, int dx, int dy, bool reb=false) {
     */
 
     // モーターへ方向を入力               //  前 - 右
-    ledcWrite(0, round(127.5+(-dxad-dyad)*MV_SCALE*DEF_ADJ_0)); //  cw - cw
-    ledcWrite(1, round(127.5+(+dxad-dyad)*MV_SCALE*DEF_ADJ_1)); // ccw - cw
-    ledcWrite(2, round(127.5+(+dxad+dyad)*MV_SCALE*DEF_ADJ_2)); // ccw - ccw
-    ledcWrite(3, round(127.5+(-dxad+dyad)*MV_SCALE*DEF_ADJ_3)); //  cw - ccw
+    ledcWrite(0, round(2047.5+(-dxad-dyad)*MV_SCALE*DEF_ADJ_0)); //  cw - cw
+    ledcWrite(1, round(2047.5+(+dxad-dyad)*MV_SCALE*DEF_ADJ_1)); // ccw - cw
+    ledcWrite(2, round(2047.5+(+dxad+dyad)*MV_SCALE*DEF_ADJ_2)); // ccw - ccw
+    ledcWrite(3, round(2047.5+(-dxad+dyad)*MV_SCALE*DEF_ADJ_3)); //  cw - ccw
 
     // モーター起動
     digitalWrite(MD_PIN_LOCK,HIGH);
@@ -196,7 +196,7 @@ int move_liner(int speed, int dx, int dy, bool reb=false) {
   }
 }
 
-int move_rotate(int speedClockwise, bool reb=false) {
+int move_rotate(int speedClockwise, bool reb) {
   if(speedClockwise==0){
     digitalWrite(MD_PIN_LOCK,LOW);
     motor_powered = false;
@@ -209,10 +209,10 @@ int move_rotate(int speedClockwise, bool reb=false) {
     if(reb){digitalWrite(MD_PIN_LOCK,LOW);} // 一度切る
 
     // モーターへ方向を入力
-    ledcWrite(0, roundf(127.5+(speedClockwise*MV_SCALE*DEF_ADJ_0)));
-    ledcWrite(1, roundf(127.5+(speedClockwise*MV_SCALE*DEF_ADJ_1)));
-    ledcWrite(2, roundf(127.5+(speedClockwise*MV_SCALE*DEF_ADJ_2)));
-    ledcWrite(3, roundf(127.5+(speedClockwise*MV_SCALE*DEF_ADJ_3)));
+    ledcWrite(0, roundf(2047.5+(16*speedClockwise*MV_SCALE*DEF_ADJ_0)));
+    ledcWrite(1, roundf(2047.5+(16*speedClockwise*MV_SCALE*DEF_ADJ_1)));
+    ledcWrite(2, roundf(2047.5+(16*speedClockwise*MV_SCALE*DEF_ADJ_2)));
+    ledcWrite(3, roundf(2047.5+(16*speedClockwise*MV_SCALE*DEF_ADJ_3)));
 
     // モーター起動
     digitalWrite(MD_PIN_LOCK,HIGH);
