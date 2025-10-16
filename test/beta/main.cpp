@@ -17,7 +17,7 @@
 #define LEG_2 140.0f // サーボ2<->3 の長さ (mm)
 #define LEG_3 190.0f // サーボ3<->4 の長さ (mm)
 #define LEG_4 165.0f // サーボ4<->5 の長さ (mm)
-#define LEG_s 8875.0f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
+#define LEG_s -8875.0f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
 #define PRG_2 29 // サーボ2 水平位置 (x1/4096回転)
 #define PRG_3 2033 // サーボ3 水平位置 (x1/4096回転)
 #define PRG_4 2129 // サーボ4 水平位置 (x1/4096回転)
@@ -27,10 +27,10 @@
 #define GER_3 -1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
 #define GER_4 -1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
 #define GER_5 2.0f // サーボ5 ギア比 (モーター 1:n 駆動) 6は負
-#define ARM_RESETTING false // trueの場合、LIMの範囲はすべて自動で設定される。
+#define ARM_RESETTING true // trueの場合、LIMの範囲はすべて自動で設定される。
 #define DEBUG_MODE true
 #define LIM_X_MIN 40.0f   // Xの最小値mm
-#define LIM_X_MAX 300.0f  // Xの最大値mm
+#define LIM_X_MAX 600.0f  // Xの最大値mm
 #define LIM_Y_MIN -100.0f // Yの最小値mm
 #define LIM_Y_MAX 250.0f  // Yの最大値mm
 #define TG_OPEN 2000
@@ -107,14 +107,19 @@ void setup() {
 
   #define ROTPI 0.0015340 //=PI/2048
 
-  arm_pos_x = 
-    LEG_4*cosf((DEG_5)*ROTPI) + 
-    LEG_3*cosf((DEG_5+DEG_4)*ROTPI) +
-    LEG_2*cosf((DEG_5+DEG_4+DEG_3)*ROTPI);
-  arm_pos_y = 
-    LEG_4*sinf((DEG_5)*ROTPI) + 
-    LEG_3*sinf((DEG_5+DEG_4)*ROTPI) +
-    LEG_2*sinf((DEG_5+DEG_4+DEG_3)*ROTPI);
+  if(DEG_5==0||DEG_4==0||DEG_3==0){
+    arm_pos_x = 150;
+    arm_pos_y = 0;
+  }else{
+    arm_pos_x = 
+      LEG_4*cosf((DEG_5)*ROTPI) + 
+      LEG_3*cosf((DEG_5+DEG_4)*ROTPI) +
+      LEG_2*cosf((DEG_5+DEG_4+DEG_3)*ROTPI);
+    arm_pos_y = 
+      LEG_4*sinf((DEG_5)*ROTPI) + 
+      LEG_3*sinf((DEG_5+DEG_4)*ROTPI) +
+      LEG_2*sinf((DEG_5+DEG_4+DEG_3)*ROTPI);
+  }
 
   registering_pos(1,TG_OPEN);
   is_arm_opened = true;
@@ -478,11 +483,5 @@ bool test_checksum(uint8_t* data){
 void registering_pos(uint8_t id,float arg){
   int nxtpos = arg + 0; /*roundf(radian_arg*651.899);*/
   int nowpos = Servo.ReadPos(id);
-  while (nxtpos<0) {
-    nxtpos+=4096;
-  }
-  while (nxtpos>4096) {
-    nxtpos-=4096;
-  }
-  Servo.WritePosEx(id, nxtpos, 0, 150);
+  Servo.WritePosEx(id, nxtpos, 300, 150);
 }
