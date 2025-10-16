@@ -14,15 +14,15 @@
 #define AUTO_SWITCH_MS 7500 // 起動後 何ms で自動に切り替えるか
 
 // アーム用のあれこれ 
-#define LEG_2 137.8f // サーボ2<->3 の長さ (mm)
-#define LEG_3 187.3f // サーボ3<->4 の長さ (mm)
-#define LEG_4 189.5f // サーボ4<->5 の長さ (mm)
-#define LEG_s 828.96f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
-#define PRG_2 2047 // サーボ2 水平位置 (x1/4096回転)
+#define LEG_2 140.0f // サーボ2<->3 の長さ (mm)
+#define LEG_3 190.0f // サーボ3<->4 の長さ (mm)
+#define LEG_4 165.0f // サーボ4<->5 の長さ (mm)
+#define LEG_s 8875.0f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
+#define PRG_2 29 // サーボ2 水平位置 (x1/4096回転)
 #define PRG_3 2033 // サーボ3 水平位置 (x1/4096回転)
 #define PRG_4 2129 // サーボ4 水平位置 (x1/4096回転)
-#define PRG_5 3600 // サーボ5 水平位置 (x1/4096回転)
-#define PRG_6 400  // サーボ6 水平位置 (x1/4096回転)
+#define PRG_5 3115 // サーボ5 水平位置 (x1/4096回転)
+#define PRG_6 716  // サーボ6 水平位置 (x1/4096回転)
 #define GER_2 -1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
 #define GER_3 -1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
 #define GER_4 -1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
@@ -34,7 +34,7 @@
 #define LIM_Y_MIN -100.0f // Yの最小値mm
 #define LIM_Y_MAX 250.0f  // Yの最大値mm
 #define TG_OPEN 2000
-#define TG_CLOS 2700
+#define TG_CLOS 2600
 
 /*
   モーター反映状況
@@ -327,7 +327,7 @@ void loop() {
         // 動かす。
         #define ANTI_ROTPI 651.90f // 2048/PI
 
-        registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
+        //registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
         registering_pos(3, (T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3);
         registering_pos(4, (T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4);
         registering_pos(5, (T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
