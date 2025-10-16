@@ -18,7 +18,7 @@
 #define MD_PIN2 25
 #define MD_PIN3 26
 #define MD_PIN_LOCK 27
-#define MV_SCALE 0.35
+#define MV_SCALE 0.65
 
 #define DEF_ADJ_0 1.0f
 #define DEF_ADJ_1 1.0f
@@ -123,14 +123,6 @@ void loop() {
     motor_powered = false;
     if(move_updated){Serial.printf(" -> Move: stop\n");};
   }
-
-
-
-
-
-  
-
-
   // CheckSum
   // senddata[7]=culc_checksum(senddata);
   // if(Serial.available()){Serial.write(senddata,8);}
