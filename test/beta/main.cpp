@@ -19,8 +19,8 @@
 #define LEG_4 189.5f // サーボ4<->5 の長さ (mm)
 #define LEG_s 828.96f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
 #define PRG_2 2047 // サーボ2 水平位置 (x1/4096回転)
-#define PRG_3 2029 // サーボ3 水平位置 (x1/4096回転)
-#define PRG_4 2127 // サーボ4 水平位置 (x1/4096回転)
+#define PRG_3 2033 // サーボ3 水平位置 (x1/4096回転)
+#define PRG_4 2129 // サーボ4 水平位置 (x1/4096回転)
 #define PRG_5 3600 // サーボ5 水平位置 (x1/4096回転)
 #define PRG_6 400  // サーボ6 水平位置 (x1/4096回転)
 #define GER_2 -1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
@@ -29,12 +29,22 @@
 #define GER_5 2.0f // サーボ5 ギア比 (モーター 1:n 駆動) 6は負
 #define ARM_RESETTING false // trueの場合、LIMの範囲はすべて自動で設定される。
 #define DEBUG_MODE true
-#define LIM_X_MIN 160.0f // 40.0f   // Xの最小値mm
-#define LIM_X_MAX 160.0f // 300.0f  // Xの最大値mm
-#define LIM_Y_MIN 0.0f // -100.0f // Yの最小値mm
-#define LIM_Y_MAX 0.0f // 450.0f  // Yの最大値mm
-#define TG_OPEN 0
-#define TG_CLOS 2047
+#define LIM_X_MIN 40.0f   // Xの最小値mm
+#define LIM_X_MAX 300.0f  // Xの最大値mm
+#define LIM_Y_MIN -100.0f // Yの最小値mm
+#define LIM_Y_MAX 250.0f  // Yの最大値mm
+#define TG_OPEN 2000
+#define TG_CLOS 2700
+
+/*
+  モーター反映状況
+  M1: Ok
+  M2: NG ギア比: -1
+  M3: Ok ギア比: -1
+  M4: Ok ギア比: -1
+  M5: NG ギア比: 2
+  M6: NG ギア比: -2
+*/
 
 
 // define global status
@@ -163,9 +173,9 @@ void loop() {
     #define KEY_ARM_PRESET_2 PS4.L2() // プリセット2へ移動させます。
     #define KEY_ARM_PRESET_3 PS4.PSButton() // プリセット3へ移動させます。
 
-    #define ARMPRESET1 [0.0f,0.0f] /*X, Y(mm)*/ 
-    #define ARMPRESET2 [0.0f,0.0f] /*X, Y(mm)*/ 
-    #define ARMPRESET3 [0.0f,0.0f] /*X, Y(mm)*/ 
+    const float ARMPRESET1[2] = {50.0f,320.0f};  /*X, Y(mm)*/ 
+    const float ARMPRESET2[2] = {50.0f,130.0f};  /*X, Y(mm)*/ 
+    const float ARMPRESET3[2] = {80.0f,-200.0f}; /*X, Y(mm)*/ 
 
 
     // MODE 2+| 予備
@@ -267,7 +277,10 @@ void loop() {
         registering_pos(4,PRG_4);
         registering_pos(5,PRG_5);
       }else{
-        if (arm_pos_x_n>LIM_X_MAX) {arm_pos_x_n=LIM_X_MAX;}
+             if ( KEY_ARM_PRESET_1 && !KEY_ARM_PRESET_2 && !KEY_ARM_PRESET_3) {arm_pos_x_n=ARMPRESET1[0];arm_pos_x_n=ARMPRESET1[1];}
+        else if (!KEY_ARM_PRESET_1 &&  KEY_ARM_PRESET_2 && !KEY_ARM_PRESET_3) {arm_pos_x_n=ARMPRESET2[0];arm_pos_x_n=ARMPRESET2[1];}
+        else if (!KEY_ARM_PRESET_1 && !KEY_ARM_PRESET_2 &&  KEY_ARM_PRESET_3) {arm_pos_x_n=ARMPRESET3[0];arm_pos_x_n=ARMPRESET3[1];}
+        else if (arm_pos_x_n>LIM_X_MAX) {arm_pos_x_n=LIM_X_MAX;}
         else if (arm_pos_x_n<LIM_X_MIN) {arm_pos_x_n=LIM_X_MIN;}
         else if (arm_pos_y_n>LIM_Y_MAX) {arm_pos_y_n=LIM_Y_MAX;}
         else if (arm_pos_y_n<LIM_Y_MIN) {arm_pos_y_n=LIM_Y_MIN;}
@@ -471,5 +484,5 @@ void registering_pos(uint8_t id,float arg){
   while (nxtpos>4096) {
     nxtpos-=4096;
   }
-  Servo.WritePosEx(id, nxtpos, 1000);
+  Servo.WritePosEx(id, nxtpos, 0, 150);
 }
