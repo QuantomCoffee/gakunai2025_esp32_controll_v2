@@ -26,7 +26,7 @@
 #define GER_2 -1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
 #define GER_3 -1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
 #define GER_4 -1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
-#define GER_5 -2.0f // サーボ5 ギア比 (モーター 1:n 駆動) 6は負
+#define GER_5 2.0f // サーボ5 ギア比 (モーター 1:n 駆動) 6は負
 #define ARM_RESETTING false // trueの場合、LIMの範囲はすべて自動で設定される。
 #define DEBUG_MODE true
 #define LIM_X_MIN 120.0f   // Xの最小値mm
@@ -330,7 +330,7 @@ void loop() {
         T_ARG_3 = 
           arm_arg - CALC_H;
         T_ARG_2 = 
-          -PI-arm_arg;
+          -(PI/2)-arm_arg;
 
         // 動かす。
         #define ANTI_ROTPI 651.90f // 2048/PI
@@ -346,7 +346,8 @@ void loop() {
 
         Serial.printf("TARGET: (%f, %f) a=%f \nMTR %f,%f,%f,%f,%f,%f \n",arm_pos_x_n,arm_pos_y_n,arm_arg,-1.0f,(T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2,(T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3,(T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4,(T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5,(T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6);
         if(DEBUG_MODE){
-          Serial.printf("VALS:\n A=%g\n B=%g\n G=%g\n H=%g",CALC_A,CALC_B,CALC_G,CALC_H);
+          Serial.printf("VALS:\n A=%g\n B=%g\n G=%g\n H=%g\n",CALC_A,CALC_B,CALC_G,CALC_H);
+          Serial.printf("TARGETS:\n [---,%g,%g,%g,%g,%g]\n",T_ARG_2,T_ARG_3,T_ARG_4,T_ARG_5,-T_ARG_5);
         }
 
         arm_pos_x = arm_pos_x_n+0.0f;
