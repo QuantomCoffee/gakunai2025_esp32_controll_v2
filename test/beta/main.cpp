@@ -19,20 +19,20 @@
 #define LEG_4 165.0f // サーボ4<->5 の長さ (mm)
 #define LEG_s -8875.0f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
 #define PRG_2 29 // サーボ2 水平位置 (x1/4096回転)
-#define PRG_3 2033 // サーボ3 水平位置 (x1/4096回転)
-#define PRG_4 2129 // サーボ4 水平位置 (x1/4096回転)
-#define PRG_5 3115 // サーボ5 水平位置 (x1/4096回転)
-#define PRG_6 716  // サーボ6 水平位置 (x1/4096回転)
-#define GER_2 -1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
-#define GER_3 -1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
-#define GER_4 -1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
+#define PRG_3 1984 // サーボ3 水平位置 (x1/4096回転)
+#define PRG_4 2044 // サーボ4 水平位置 (x1/4096回転)
+#define PRG_5 -1885 // サーボ5 水平位置 (x1/4096回転)
+#define PRG_6 6067  // サーボ6 水平位置 (x1/4096回転)
+#define GER_2 1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
+#define GER_3 1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
+#define GER_4 1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
 #define GER_5 2.0f // サーボ5 ギア比 (モーター 1:n 駆動) 6は負
-#define ARM_RESETTING true // trueの場合、LIMの範囲はすべて自動で設定される。
+#define ARM_RESETTING false // trueの場合、LIMの範囲はすべて自動で設定される。
 #define DEBUG_MODE true
-#define LIM_X_MIN 40.0f   // Xの最小値mm
+#define LIM_X_MIN 100.0f   // Xの最小値mm
 #define LIM_X_MAX 600.0f  // Xの最大値mm
-#define LIM_Y_MIN -100.0f // Yの最小値mm
-#define LIM_Y_MAX 250.0f  // Yの最大値mm
+#define LIM_Y_MIN -80.0f // Yの最小値mm
+#define LIM_Y_MAX 300.0f  // Yの最大値mm
 #define TG_OPEN 2000
 #define TG_CLOS 2600
 
@@ -52,6 +52,7 @@ bool automationEnable = false; // falseの場合は自動化しない (ラズパ
 SMS_STS Servo;
 int prev_ms;  // PS4コントローラー通信タイムアウト
 int loop_delta; // コントロールの時間差分
+int armtime_delta; // アーム専用時間計測
 int sw_time;  // コントローラーが最後につながってた時間
 int delta_sw_time;
 
@@ -128,6 +129,7 @@ void setup() {
   prev_ms = millis(); 
   loop_delta = millis();
   sw_time = millis();
+  armtime_delta = micros();
   delay(100);
 }
 
@@ -260,15 +262,16 @@ void loop() {
 
       // 差分計算
       if(abs(STICK_ARM_FRONT)>=24){
-        arm_pos_x_n += (STICK_ARM_FRONT/128.0f) * 0.15f /*(m/s)*/ * (millis()-loop_delta); 
+        arm_pos_x_n += (STICK_ARM_FRONT/128.0f) * 0.15f /*(m/s)*/ * (millis()-armtime_delta); 
       }
       if(KEY_ARM_UP&&KEY_ARM_DW){
         // what?
       }else if(KEY_ARM_UP){
-        arm_pos_y_n += 0.15f /*(m/s)*/ * (millis()-loop_delta); 
+        arm_pos_y_n += 0.15f /*(m/s)*/ * (millis()-armtime_delta); 
       }else if(KEY_ARM_DW){
-        arm_pos_y_n -= 0.15f /*(m/s)*/ * (millis()-loop_delta); 
+        arm_pos_y_n -= 0.15f /*(m/s)*/ * (millis()-armtime_delta); 
       }
+      armtime_delta=millis();
 
       // サイズ制限上の問題
       if(ARM_RESETTING){
@@ -277,9 +280,9 @@ void loop() {
         registering_pos(4,PRG_4);
         registering_pos(5,PRG_5);
       }else{
-             if ( KEY_ARM_PRESET_1 && !KEY_ARM_PRESET_2 && !KEY_ARM_PRESET_3) {arm_pos_x_n=ARMPRESET1[0];arm_pos_x_n=ARMPRESET1[1];}
-        else if (!KEY_ARM_PRESET_1 &&  KEY_ARM_PRESET_2 && !KEY_ARM_PRESET_3) {arm_pos_x_n=ARMPRESET2[0];arm_pos_x_n=ARMPRESET2[1];}
-        else if (!KEY_ARM_PRESET_1 && !KEY_ARM_PRESET_2 &&  KEY_ARM_PRESET_3) {arm_pos_x_n=ARMPRESET3[0];arm_pos_x_n=ARMPRESET3[1];}
+             if ( KEY_ARM_PRESET_1 && !KEY_ARM_PRESET_2 && !KEY_ARM_PRESET_3) {arm_pos_x_n=ARMPRESET1[0];arm_pos_y_n=ARMPRESET1[1];}
+        else if (!KEY_ARM_PRESET_1 &&  KEY_ARM_PRESET_2 && !KEY_ARM_PRESET_3) {arm_pos_x_n=ARMPRESET2[0];arm_pos_y_n=ARMPRESET2[1];}
+        else if (!KEY_ARM_PRESET_1 && !KEY_ARM_PRESET_2 &&  KEY_ARM_PRESET_3) {arm_pos_x_n=ARMPRESET3[0];arm_pos_y_n=ARMPRESET3[1];}
         else if (arm_pos_x_n>LIM_X_MAX) {arm_pos_x_n=LIM_X_MAX;}
         else if (arm_pos_x_n<LIM_X_MIN) {arm_pos_x_n=LIM_X_MIN;}
         else if (arm_pos_y_n>LIM_Y_MAX) {arm_pos_y_n=LIM_Y_MAX;}
@@ -287,6 +290,7 @@ void loop() {
 
         // 姿勢角 alpha
         float arm_arg = atanf(arm_pos_x_n/(arm_pos_y_n+1e-8f))-(PI/2);
+        if(arm_pos_y_n>=0){arm_arg = atanf(arm_pos_x_n/(arm_pos_y_n+1e-8f))*2-(PI/2);}
 
         float T_ARG_5,T_ARG_4,T_ARG_3,T_ARG_2;
         float CALC_A = arm_pos_x_n-(LEG_2*cosf(arm_arg));
@@ -298,6 +302,7 @@ void loop() {
           arm_pos_x_n=arm_pos_x;
           arm_pos_y_n=arm_pos_y;
           arm_arg = atanf(arm_pos_x/(arm_pos_y+1e-8f))-(PI/2);
+          if(arm_pos_y_n>=0){arm_arg = atanf(arm_pos_x_n/(arm_pos_y_n+1e-8f))*2-(PI/2);}
           CALC_A = arm_pos_x-(LEG_2*cosf(arm_arg));
           CALC_B = arm_pos_y-(LEG_2*sinf(arm_arg));
           C_A2_B2 = csq(CALC_A)+csq(CALC_B);
