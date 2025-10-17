@@ -109,7 +109,7 @@ void setup() {
 
   if(DEG_5==0||DEG_4==0||DEG_3==0){
     arm_pos_x = 150;
-    arm_pos_y = 100;
+    arm_pos_y = 0;
   }else{
     arm_pos_x = 
       LEG_4*cosf((DEG_5)*ROTPI) + 
@@ -236,114 +236,7 @@ void loop() {
 
       // put アームの処理 here.
 
-      /*
-        注意：PRG_3,4,5について
-        これらは「水平時の角度データ」を示す。
-
-          5---4---3--2
-   ⌜       ⌝         1
-
-        角度を出す際はこの値を引く。
-        例えばPRG_3=1024であれば、サーボ3が0であった場合-90°(-1024)を示す。
-        もし図面とサーボ回転方向が逆であればギア比を負にすること。
-      */
-
-      // アームの位置を取得
       
-      // アーム現在地取得
-      // cos,sinはラジアンを引数に取るので、PI/2048をかけて-4096~4096を-2pi～2piへ変換
-
-      #define ROTPI 0.0015340 //=PI/2048
-
-      float arm_pos_x_n = arm_pos_x+0.0; 
-      float arm_pos_y_n = arm_pos_y+0.0;
-
-      // 差分計算
-      if(abs(STICK_ARM_FRONT)>=24){
-        arm_pos_x_n += (STICK_ARM_FRONT/128.0f) * 0.15f /*(m/s)*/ * (millis()-loop_delta); 
-      }
-      if(KEY_ARM_UP&&KEY_ARM_DW){
-        // what?
-      }else if(KEY_ARM_UP){
-        arm_pos_y_n += 0.15f /*(m/s)*/ * (millis()-loop_delta); 
-      }else if(KEY_ARM_DW){
-        arm_pos_y_n -= 0.15f /*(m/s)*/ * (millis()-loop_delta); 
-      }
-
-      // サイズ制限上の問題
-      if(ARM_RESETTING){
-        registering_pos(2,PRG_2);
-        registering_pos(3,PRG_3);
-        registering_pos(4,PRG_4);
-        registering_pos(5,PRG_5);
-      }else{
-             if ( KEY_ARM_PRESET_1 && !KEY_ARM_PRESET_2 && !KEY_ARM_PRESET_3) {arm_pos_x_n=ARMPRESET1[0];arm_pos_x_n=ARMPRESET1[1];}
-        else if (!KEY_ARM_PRESET_1 &&  KEY_ARM_PRESET_2 && !KEY_ARM_PRESET_3) {arm_pos_x_n=ARMPRESET2[0];arm_pos_x_n=ARMPRESET2[1];}
-        else if (!KEY_ARM_PRESET_1 && !KEY_ARM_PRESET_2 &&  KEY_ARM_PRESET_3) {arm_pos_x_n=ARMPRESET3[0];arm_pos_x_n=ARMPRESET3[1];}
-        else if (arm_pos_x_n>LIM_X_MAX) {arm_pos_x_n=LIM_X_MAX;}
-        else if (arm_pos_x_n<LIM_X_MIN) {arm_pos_x_n=LIM_X_MIN;}
-        else if (arm_pos_y_n>LIM_Y_MAX) {arm_pos_y_n=LIM_Y_MAX;}
-        else if (arm_pos_y_n<LIM_Y_MIN) {arm_pos_y_n=LIM_Y_MIN;}
-
-        // 姿勢角 alpha
-        float arm_arg = atanf(arm_pos_x_n/(arm_pos_y_n+1e-8f))-(PI/2);
-
-        float T_ARG_5,T_ARG_4,T_ARG_3,T_ARG_2;
-        float CALC_A = arm_pos_x_n-(LEG_2*cosf(arm_arg));
-        float CALC_B = arm_pos_y_n-(LEG_2*sinf(arm_arg));
-        float C_A2_B2 = csq(CALC_A)+csq(CALC_B);
-        float CALC_G = atanf(CALC_B/CALC_A);
-
-        if(((C_A2_B2+LEG_s)/(2*LEG_4*sqrtf(C_A2_B2)+1e-8f))>=1){
-          arm_pos_x_n=arm_pos_x;
-          arm_pos_y_n=arm_pos_y;
-          arm_arg = atanf(arm_pos_x/(arm_pos_y+1e-8f))-(PI/2);
-          CALC_A = arm_pos_x-(LEG_2*cosf(arm_arg));
-          CALC_B = arm_pos_y-(LEG_2*sinf(arm_arg));
-          C_A2_B2 = csq(CALC_A)+csq(CALC_B);
-          CALC_G = atanf(CALC_B/CALC_A);
-        }
-
-        // 計算フェーズ
-        T_ARG_5 =
-          CALC_G +
-          acosf(
-            (C_A2_B2+LEG_s)/
-            (2*LEG_4*sqrtf(C_A2_B2)+1e-8f)
-          );
-        
-        float CALC_H = atanf(
-            (CALC_B-(LEG_4*sinf(T_ARG_5)))/
-            ((CALC_A-(LEG_4*cosf(T_ARG_5)))+1e-8f)
-          );
-        
-        T_ARG_4 = 
-          -T_ARG_5 + CALC_H;
-        T_ARG_3 = 
-          arm_arg - CALC_H;
-        T_ARG_2 = 
-          -PI-arm_arg;
-
-        // 動かす。
-        #define ANTI_ROTPI 651.90f // 2048/PI
-
-        if(isfinite(T_ARG_2)&&isfinite(T_ARG_3)&&isfinite(T_ARG_4)&&isfinite(T_ARG_5)){
-          // すべてが有限数字であれば反映
-          // registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
-          registering_pos(3, (T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3);
-          registering_pos(4, (T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4);
-          registering_pos(5, (T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
-          registering_pos(6, (T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6);
-        }
-
-        Serial.printf("TARGET: (%f, %f) a=%f \nMTR %f,%f,%f,%f,%f,%f \n",arm_pos_x_n,arm_pos_y_n,arm_arg,-1.0f,(T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2,(T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3,(T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4,(T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5,(T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6);
-        if(DEBUG_MODE){
-          Serial.printf("VALS:\n A=%g\n B=%g\n G=%g\n H=%g",CALC_A,CALC_B,CALC_G,CALC_H);
-        }
-
-        arm_pos_x = arm_pos_x_n+0.0f;
-        arm_pos_y = arm_pos_y_n+0.0f;
-      }
 
       static bool key_arm_holding = false;
       if(KEY_ARM_HOLD){
