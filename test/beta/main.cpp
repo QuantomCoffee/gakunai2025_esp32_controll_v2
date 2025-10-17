@@ -21,8 +21,8 @@
 #define PRG_2 29 // サーボ2 水平位置 (x1/4096回転)
 #define PRG_3 1984 // サーボ3 水平位置 (x1/4096回転)
 #define PRG_4 2044 // サーボ4 水平位置 (x1/4096回転)
-#define PRG_5 -1885 // サーボ5 水平位置 (x1/4096回転)
-#define PRG_6 6067  // サーボ6 水平位置 (x1/4096回転)
+#define PRG_5 -481 // サーボ5 水平位置 (x1/4096回転)
+#define PRG_6 4738  // サーボ6 水平位置 (x1/4096回転)
 #define GER_2 1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
 #define GER_3 1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
 #define GER_4 1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
@@ -33,17 +33,17 @@
 #define LIM_X_MAX 600.0f  // Xの最大値mm
 #define LIM_Y_MIN -80.0f // Yの最小値mm
 #define LIM_Y_MAX 300.0f  // Yの最大値mm
-#define TG_OPEN 2000
-#define TG_CLOS 2600
+#define TG_OPEN 3350
+#define TG_CLOS 4000
 
 /*
   モーター反映状況
   M1: Ok
-  M2: NG ギア比: -1
-  M3: Ok ギア比: -1
-  M4: Ok ギア比: -1
-  M5: NG ギア比: 2
-  M6: NG ギア比: -2
+  M2: Ok ギア比: 1
+  M3: Ok ギア比: 1
+  M4: Ok ギア比: 1
+  M5: Ok ギア比: 2
+  M6: Ok ギア比: -2
 */
 
 
@@ -298,7 +298,10 @@ void loop() {
         float C_A2_B2 = csq(CALC_A)+csq(CALC_B);
         float CALC_G = atanf(CALC_B/CALC_A);
 
-        if(((C_A2_B2+LEG_s)/(2*LEG_4*sqrtf(C_A2_B2)+1e-8f))>=1){
+        if(
+            ((C_A2_B2+LEG_s)/(2*LEG_4*sqrtf(C_A2_B2)+1e-8f))>=1 || // T_ARG_5のacosがしんでる or
+            (CALC_G+acosf((C_A2_B2+LEG_s)/(2*LEG_4*sqrtf(C_A2_B2)+1e-8f)))<(PI*0.25) // T_ARG_5が水平上45度未満であれば差し戻し
+          ){
           arm_pos_x_n=arm_pos_x;
           arm_pos_y_n=arm_pos_y;
           arm_arg = atanf(arm_pos_x/(arm_pos_y+1e-8f))-(PI/2);
