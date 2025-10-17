@@ -267,9 +267,9 @@ void loop() {
       if(KEY_ARM_UP&&KEY_ARM_DW){
         // what?
       }else if(KEY_ARM_UP){
-        arm_pos_y_n += 0.15f /*(m/s)*/ * (millis()-armtime_delta); 
+        arm_pos_x_n += 0.15f /*(m/s)*/ * (millis()-armtime_delta); 
       }else if(KEY_ARM_DW){
-        arm_pos_y_n -= 0.15f /*(m/s)*/ * (millis()-armtime_delta); 
+        arm_pos_x_n -= 0.15f /*(m/s)*/ * (millis()-armtime_delta); 
       }
       armtime_delta=millis();
 
@@ -289,12 +289,12 @@ void loop() {
         else if (arm_pos_y_n<LIM_Y_MIN) {arm_pos_y_n=LIM_Y_MIN;}
 
         // 姿勢角 alpha
-        float arm_arg = atanf(arm_pos_x_n/(arm_pos_y_n+1e-8f))-(PI/2);
-        if(arm_pos_y_n>=0){arm_arg = atanf(arm_pos_x_n/(arm_pos_y_n+1e-8f))*2-(PI/2);}
+        float arm_arg = atanf(arm_pos_y_n/(arm_pos_x_n+1e-8f))-(PI/2);
+        if(arm_pos_y_n>=0){arm_arg = atanf(arm_pos_y_n/(arm_pos_x_n+1e-8f))*2-(PI/2);}
 
         float T_ARG_5,T_ARG_4,T_ARG_3,T_ARG_2;
-        float CALC_A = arm_pos_x_n-(LEG_2*cosf(arm_arg));
-        float CALC_B = arm_pos_y_n-(LEG_2*sinf(arm_arg));
+        float CALC_A = arm_pos_y_n-(LEG_2*cosf(arm_arg));
+        float CALC_B = arm_pos_x_n-(LEG_2*sinf(arm_arg));
         float C_A2_B2 = csq(CALC_A)+csq(CALC_B);
         float CALC_G = atanf(CALC_B/CALC_A);
 
@@ -302,12 +302,12 @@ void loop() {
             ((C_A2_B2+LEG_s)/(2*LEG_4*sqrtf(C_A2_B2)+1e-8f))>=1 || // T_ARG_5のacosがしんでる or
             (CALC_G+acosf((C_A2_B2+LEG_s)/(2*LEG_4*sqrtf(C_A2_B2)+1e-8f)))<(PI*0.25) // T_ARG_5が水平上45度未満であれば差し戻し
           ){
-          arm_pos_x_n=arm_pos_x;
           arm_pos_y_n=arm_pos_y;
-          arm_arg = atanf(arm_pos_x/(arm_pos_y+1e-8f))-(PI/2);
-          if(arm_pos_y_n>=0){arm_arg = atanf(arm_pos_x_n/(arm_pos_y_n+1e-8f))*2-(PI/2);}
-          CALC_A = arm_pos_x-(LEG_2*cosf(arm_arg));
-          CALC_B = arm_pos_y-(LEG_2*sinf(arm_arg));
+          arm_pos_x_n=arm_pos_x;
+          arm_arg = atanf(arm_pos_y/(arm_pos_x+1e-8f))-(PI/2);
+          if(arm_pos_y_n>=0){arm_arg = atanf(arm_pos_y_n/(arm_pos_x_n+1e-8f))*2-(PI/2);}
+          CALC_A = arm_pos_y-(LEG_2*cosf(arm_arg));
+          CALC_B = arm_pos_x-(LEG_2*sinf(arm_arg));
           C_A2_B2 = csq(CALC_A)+csq(CALC_B);
           CALC_G = atanf(CALC_B/CALC_A);
         }
