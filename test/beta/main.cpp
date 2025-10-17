@@ -250,11 +250,6 @@ void loop() {
 
       // アームの位置を取得
       
-      // アーム角度計算 (1/4096回転単位)
-      float DEG_3 = (Servo.Ping(3)==-1) ? 0 : (Servo.ReadPos(3)-PRG_3)/GER_3;
-      float DEG_4 = (Servo.Ping(4)==-1) ? 0 : (Servo.ReadPos(4)-PRG_4)/GER_4;
-      float DEG_5 = (Servo.Ping(5)==-1) ? 0 : (Servo.ReadPos(5)-PRG_5)/GER_5;
-
       // アーム現在地取得
       // cos,sinはラジアンを引数に取るので、PI/2048をかけて-4096~4096を-2pi～2piへ変換
 
@@ -332,17 +327,22 @@ void loop() {
         // 動かす。
         #define ANTI_ROTPI 651.90f // 2048/PI
 
-        //registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
-        registering_pos(3, (T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3);
-        registering_pos(4, (T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4);
-        registering_pos(5, (T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
-        registering_pos(6, (T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6);
-        
+        if(isfinite(T_ARG_2)&&isfinite(T_ARG_3)&&isfinite(T_ARG_4)&&isfinite(T_ARG_5)){
+          // すべてが有限数字であれば反映
+          // registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
+          registering_pos(3, (T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3);
+          registering_pos(4, (T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4);
+          registering_pos(5, (T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
+          registering_pos(6, (T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6);
+        }
 
         Serial.printf("TARGET: (%f, %f) a=%f \nMTR %f,%f,%f,%f,%f,%f \n",arm_pos_x_n,arm_pos_y_n,arm_arg,-1.0f,(T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2,(T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3,(T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4,(T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5,(T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6);
         if(DEBUG_MODE){
           Serial.printf("VALS:\n A=%g\n B=%g\n G=%g\n H=%g",CALC_A,CALC_B,CALC_G,CALC_H);
         }
+
+        arm_pos_x = arm_pos_x_n+0.0f;
+        arm_pos_y = arm_pos_y_n+0.0f;
       }
 
       static bool key_arm_holding = false;
@@ -483,5 +483,5 @@ bool test_checksum(uint8_t* data){
 void registering_pos(uint8_t id,float arg){
   int nxtpos = arg + 0; /*roundf(radian_arg*651.899);*/
   int nowpos = Servo.ReadPos(id);
-  Servo.WritePosEx(id, nxtpos, 300, 150);
+  if(isfinite(nxtpos)){Servo.WritePosEx(id, nxtpos, 300, 150);}
 }
