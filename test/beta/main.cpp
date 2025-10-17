@@ -14,24 +14,24 @@
 #define AUTO_SWITCH_MS 7500 // 起動後 何ms で自動に切り替えるか
 
 // アーム用のあれこれ 
-#define LEG_2 140.0f // サーボ2<->3 の長さ (mm)
+#define LEG_2 140.4f // サーボ2<->3 の長さ (mm)
 #define LEG_3 190.0f // サーボ3<->4 の長さ (mm)
-#define LEG_4 165.0f // サーボ4<->5 の長さ (mm)
-#define LEG_s -8875.0f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
-#define PRG_2 29 // サーボ2 水平位置 (x1/4096回転)
+#define LEG_4 164.3f // サーボ4<->5 の長さ (mm)
+#define LEG_s -9105.51f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
+#define PRG_2 1979 // サーボ2 水平位置 (x1/4096回転)
 #define PRG_3 1984 // サーボ3 水平位置 (x1/4096回転)
 #define PRG_4 2044 // サーボ4 水平位置 (x1/4096回転)
 #define PRG_5 -481 // サーボ5 水平位置 (x1/4096回転)
 #define PRG_6 4738  // サーボ6 水平位置 (x1/4096回転)
-#define GER_2 1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
-#define GER_3 1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
-#define GER_4 1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
-#define GER_5 2.0f // サーボ5 ギア比 (モーター 1:n 駆動) 6は負
+#define GER_2 -1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
+#define GER_3 -1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
+#define GER_4 -1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
+#define GER_5 -2.0f // サーボ5 ギア比 (モーター 1:n 駆動) 6は負
 #define ARM_RESETTING false // trueの場合、LIMの範囲はすべて自動で設定される。
 #define DEBUG_MODE true
-#define LIM_X_MIN 100.0f   // Xの最小値mm
+#define LIM_X_MIN 120.0f   // Xの最小値mm
 #define LIM_X_MAX 600.0f  // Xの最大値mm
-#define LIM_Y_MIN -80.0f // Yの最小値mm
+#define LIM_Y_MIN -40.0f // Yの最小値mm
 #define LIM_Y_MAX 300.0f  // Yの最大値mm
 #define TG_OPEN 3350
 #define TG_CLOS 4000
@@ -180,9 +180,9 @@ void loop() {
     #define KEY_ARM_PRESET_2 PS4.L2() // プリセット2へ移動させます。
     #define KEY_ARM_PRESET_3 PS4.PSButton() // プリセット3へ移動させます。
 
-    const float ARMPRESET1[2] = {50.0f,320.0f};  /*X, Y(mm)*/ 
-    const float ARMPRESET2[2] = {50.0f,130.0f};  /*X, Y(mm)*/ 
-    const float ARMPRESET3[2] = {80.0f,-200.0f}; /*X, Y(mm)*/ 
+    const float ARMPRESET1[2] = {120.0f,320.0f};  /*X, Y(mm)*/ 
+    const float ARMPRESET2[2] = {120.0f,130.0f};  /*X, Y(mm)*/ 
+    const float ARMPRESET3[2] = {200.0f,-40.0f}; /*X, Y(mm)*/ 
 
 
     // MODE 2+| 予備

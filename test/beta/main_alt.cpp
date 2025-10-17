@@ -18,7 +18,7 @@
 #define LEG_3 190.0f // サーボ3<->4 の長さ (mm)
 #define LEG_4 165.0f // サーボ4<->5 の長さ (mm)
 #define LEG_s -8875.0f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
-#define PRG_2 29 // サーボ2 水平位置 (x1/4096回転)
+#define PRG_2 1979 // サーボ2 水平位置 (x1/4096回転)
 #define PRG_3 2033 // サーボ3 水平位置 (x1/4096回転)
 #define PRG_4 2129 // サーボ4 水平位置 (x1/4096回転)
 #define PRG_5 3115 // サーボ5 水平位置 (x1/4096回転)
@@ -98,10 +98,9 @@ void setup() {
   Servo.WritePosEx(2,0,0);
 
   // アーム角度計算 (1/4096回転単位)
-  float DEG_3 = (Servo.Ping(3)==-1) ? 0 : (Servo.ReadPos(3)-PRG_3)/GER_3;
-  float DEG_4 = (Servo.Ping(4)==-1) ? 0 : (Servo.ReadPos(4)-PRG_4)/GER_4;
-  float DEG_5 = (Servo.Ping(5)==-1) ? 0 : (Servo.ReadPos(5)-PRG_5)/GER_5;
-
+  float DEG_3 = 0;
+  float DEG_4 = 0;
+  float DEG_5 = 0;
   // アーム現在地取得
   // cos,sinはラジアンを引数に取るので、PI/2048をかけて-4096~4096を-2pi～2piへ変換
 
