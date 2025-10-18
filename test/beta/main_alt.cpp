@@ -33,9 +33,8 @@
 #define LIM_X_MAX 600.0f  // Xの最大値mm
 #define LIM_Y_MIN -40.0f // Yの最小値mm
 #define LIM_Y_MAX 300.0f  // Yの最大値mm
-#define TG_OPEN 1950
-
-#define TG_CLOS 2607
+#define TG_OPEN 1750
+#define TG_CLOS 2407
 
 const float ARMPRESET1[2] = {120.0f,320.0f};  /*X, Y(mm)*/ 
 const float ARMPRESET2[2] = {120.0f,130.0f};  /*X, Y(mm)*/ 
@@ -303,7 +302,11 @@ void loop() {
         registering_pos(6, (T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6);
       }
 
-      Serial.printf("TARGET: Disabled a=c%d MTR:%g,%g,%g,%g,%g,%g \n",coa,is_arm_opened?TG_OPEN:TG_CLOS,roundf((T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2),roundf((T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3),roundf((T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4),roundf((T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5),roundf((T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6));
+      if(is_arm_opened){
+        Serial.printf("TARGET: Disabled a=c%d MTR:%d(op),%g,%g,%g,%g,%g \n",coa,TG_OPEN,roundf((T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2),roundf((T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3),roundf((T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4),roundf((T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5),roundf((T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6));
+      }else{
+        Serial.printf("TARGET: Disabled a=c%d MTR:%d(cl),%g,%g,%g,%g,%g \n",coa,TG_CLOS,roundf((T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2),roundf((T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3),roundf((T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4),roundf((T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5),roundf((T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6));
+      }
       if(DEBUG_MODE){
         Serial.printf("TARGETS:\n [---,%g,%g,%g,%g,%g]\n",T_ARG_2,T_ARG_3,T_ARG_4,T_ARG_5,-T_ARG_5);
       }
@@ -437,6 +440,11 @@ void registering_pos(uint8_t id,float arg){
     while(nxtpos<0){
       nxtpos+=4096;
     }
-    Servo.WritePosEx(id, nxtpos, 700, 250);
+    if(id==4){
+      Servo.WritePosEx(id, nxtpos, 400, 250);
+    }else{
+      Servo.WritePosEx(id, nxtpos, 700, 250);
+    }
+    
   }
 }
