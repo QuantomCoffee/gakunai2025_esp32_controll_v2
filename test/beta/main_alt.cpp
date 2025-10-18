@@ -18,10 +18,10 @@
 #define LEG_3 190.0f // サーボ3<->4 の長さ (mm)
 #define LEG_4 164.3f // サーボ4<->5 の長さ (mm)
 #define LEG_s -9105.51f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
-#define PRG_2 1979 // サーボ2 水平位置 (x1/4096回転)
-#define PRG_3 1984 // サーボ3 水平位置 (x1/4096回転)
-#define PRG_4 2134 // サーボ4 水平位置 (x1/4096回転)
-#define PRG_5 -629 // サーボ5 水平位置 (x1/4096回転)
+#define PRG_2 2047 // サーボ2 水平位置 (x1/4096回転)
+#define PRG_3 2047 // サーボ3 水平位置 (x1/4096回転)
+#define PRG_4 2047 // サーボ4 水平位置 (x1/4096回転)
+#define PRG_5 -500 // サーボ5 水平位置 (x1/4096回転)
 #define PRG_6 4435  // サーボ6 水平位置 (x1/4096回転)
 #define GER_2 1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
 #define GER_3 1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
@@ -34,7 +34,7 @@
 #define LIM_Y_MIN -40.0f // Yの最小値mm
 #define LIM_Y_MAX 300.0f  // Yの最大値mm
 #define TG_OPEN 1750
-#define TG_CLOS 2407
+#define TG_CLOS 2507
 
 const float ARMPRESET1[2] = {120.0f,320.0f};  /*X, Y(mm)*/ 
 const float ARMPRESET2[2] = {120.0f,130.0f};  /*X, Y(mm)*/ 
@@ -254,9 +254,9 @@ void loop() {
       // 動かす。
       static float ARG_PERCENTILE[4] = {0.0f,-.25f,-.25f,0.50f};
 
-      const float APAP_0[3] = {-.25f,-.25f,0.55f}; // ARG PERCENTILE FOR ARM PRESET (DEFAULT)
-      const float APAP_1[3] = {-.35f,-.53f,0.47f}; // ARG PERCENTILE FOR ARM PRESET (UP)
-      const float APAP_2[3] = {-.17f,-.16f,0.57f}; // ARG PERCENTILE FOR ARM PRESET (DOWN)
+      const float APAP_0[3] = {-.36f,-.30f,0.47f}; // ARG PERCENTILE FOR ARM PRESET (DEFAULT)
+      const float APAP_1[3] = {-.31f,-.47f,0.40f}; // ARG PERCENTILE FOR ARM PRESET (DOWN)
+      const float APAP_2[3] = {-.17f,-.30f,0.72f}; // ARG PERCENTILE FOR ARM PRESET (UP)
 
       static int coa = 0x0;
 
@@ -284,7 +284,7 @@ void loop() {
       }
       ARG_PERCENTILE[1] += (STICK_ARM_FRONT*0.00078f);
 
-      ARG_PERCENTILE[0] = -.5f - (ARG_PERCENTILE[1]+ARG_PERCENTILE[2]+ARG_PERCENTILE[3]-0.05f);
+      ARG_PERCENTILE[0] = -.5f - (ARG_PERCENTILE[1]+ARG_PERCENTILE[2]+ARG_PERCENTILE[3]);
       if(abs(ARG_PERCENTILE[0])>=0.575f){ARG_PERCENTILE[0] = 0.575f*roundf(ARG_PERCENTILE[0]/abs(ARG_PERCENTILE[0]));}
       float T_ARG_5 = PI*ARG_PERCENTILE[3];
       float T_ARG_4 = PI*ARG_PERCENTILE[2];
@@ -440,7 +440,9 @@ void registering_pos(uint8_t id,float arg){
     while(nxtpos<0){
       nxtpos+=4096;
     }
-    if(id==4){
+    if(abs(nxtpos-nowpos)<=10){
+      Servo.EnableTorque(id, 1);
+    }else if(id==4){
       Servo.WritePosEx(id, nxtpos, 400, 250);
     }else{
       Servo.WritePosEx(id, nxtpos, 700, 250);

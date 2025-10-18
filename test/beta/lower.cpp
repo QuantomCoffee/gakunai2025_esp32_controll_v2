@@ -159,8 +159,8 @@ int move_liner(int speed, int dx, int dy, bool reb) {
     
     if(reb){digitalWrite(MD_PIN_LOCK,LOW);} // 一度切る
 
-    double dxad = (dx*speed)/8.0;
-    double dyad = (dy*speed)/8.0;
+    double dxad = (dx*speed)/24.0;
+    double dyad = (dy*speed)/24.0;
 
     /*
         モーター配置
