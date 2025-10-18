@@ -23,9 +23,9 @@
 #define PRG_4 2134 // サーボ4 水平位置 (x1/4096回転)
 #define PRG_5 -629 // サーボ5 水平位置 (x1/4096回転)
 #define PRG_6 4435  // サーボ6 水平位置 (x1/4096回転)
-#define GER_2 -1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
-#define GER_3 -1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
-#define GER_4 -1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
+#define GER_2 1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
+#define GER_3 1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
+#define GER_4 1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
 #define GER_5 2.0f // サーボ5 ギア比 (モーター 1:n 駆動) 6は負
 #define ARM_RESETTING false // trueの場合、LIMの範囲はすべて自動で設定される。
 #define DEBUG_MODE true
@@ -35,6 +35,10 @@
 #define LIM_Y_MAX 300.0f  // Yの最大値mm
 #define TG_OPEN 3350
 #define TG_CLOS 4000
+
+const float ARMPRESET1[2] = {120.0f,320.0f};  /*X, Y(mm)*/ 
+const float ARMPRESET2[2] = {120.0f,130.0f};  /*X, Y(mm)*/ 
+const float ARMPRESET3[2] = {200.0f,-40.0f}; /*X, Y(mm)*/ 
 
 /*
   モーター反映状況
@@ -109,8 +113,8 @@ void setup() {
   #define ROTPI 0.0015340 //=PI/2048
 
   if(DEG_5==0||DEG_4==0||DEG_3==0){
-    arm_pos_x = 150;
-    arm_pos_y = 100;
+    arm_pos_x = ARMPRESET3[0];
+    arm_pos_y = ARMPRESET3[1];
   }else{
     arm_pos_x = 
       LEG_4*cosf((DEG_5)*ROTPI) + 
@@ -180,9 +184,6 @@ void loop() {
     #define KEY_ARM_PRESET_2 PS4.L2() // プリセット2へ移動させます。
     #define KEY_ARM_PRESET_3 PS4.PSButton() // プリセット3へ移動させます。
 
-    const float ARMPRESET1[2] = {120.0f,320.0f};  /*X, Y(mm)*/ 
-    const float ARMPRESET2[2] = {120.0f,130.0f};  /*X, Y(mm)*/ 
-    const float ARMPRESET3[2] = {200.0f,-40.0f}; /*X, Y(mm)*/ 
 
 
     // MODE 2+| 予備
@@ -289,8 +290,7 @@ void loop() {
         else if (arm_pos_y_n<LIM_Y_MIN) {arm_pos_y_n=LIM_Y_MIN;}
 
         // 姿勢角 alpha
-        float arm_arg = atanf(arm_pos_y_n/(arm_pos_x_n+1e-8f))-(PI/2);
-        if(arm_pos_y_n>=0){arm_arg = atanf(arm_pos_y_n/(arm_pos_x_n+1e-8f))*2-(PI/2);}
+        float arm_arg = PI/4;
 
         float T_ARG_5,T_ARG_4,T_ARG_3,T_ARG_2;
         float CALC_A = arm_pos_y_n-(LEG_2*cosf(arm_arg));
@@ -304,8 +304,6 @@ void loop() {
           ){
           arm_pos_y_n=arm_pos_y;
           arm_pos_x_n=arm_pos_x;
-          arm_arg = atanf(arm_pos_y/(arm_pos_x+1e-8f))-(PI/2);
-          if(arm_pos_y_n>=0){arm_arg = atanf(arm_pos_y_n/(arm_pos_x_n+1e-8f))*2-(PI/2);}
           CALC_A = arm_pos_y-(LEG_2*cosf(arm_arg));
           CALC_B = arm_pos_x-(LEG_2*sinf(arm_arg));
           C_A2_B2 = csq(CALC_A)+csq(CALC_B);
@@ -337,16 +335,16 @@ void loop() {
 
         if(isfinite(T_ARG_2)&&isfinite(T_ARG_3)&&isfinite(T_ARG_4)&&isfinite(T_ARG_5)){
           // すべてが有限数字であれば反映
-          // registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
+          registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
           registering_pos(3, (T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3);
           registering_pos(4, (T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4);
           registering_pos(5, (T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
           registering_pos(6, (T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6);
         }
 
-        Serial.printf("TARGET: (%f, %f) a=%f \nMTR %f,%f,%f,%f,%f,%f \n",arm_pos_x_n,arm_pos_y_n,arm_arg,-1.0f,(T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2,(T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3,(T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4,(T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5,(T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6);
+        Serial.printf("TARGET: (%f, %f) a=%f MTR:----,%g,%g,%g,%g,%g \n",arm_pos_x_n,arm_pos_y_n,arm_arg,roundf((T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2),roundf((T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3),roundf((T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4),roundf((T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5),roundf((T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6));
         if(DEBUG_MODE){
-          Serial.printf("VALS:\n A=%g\n B=%g\n G=%g\n H=%g\n",CALC_A,CALC_B,CALC_G,CALC_H);
+          Serial.printf("VALS:\n A=%g\n B=%g\n D=%g\n G=%g\n H=%g\n",CALC_A,CALC_B,((C_A2_B2+LEG_s)/(2*LEG_4*sqrtf(C_A2_B2)+1e-8f)),CALC_G,CALC_H);
           Serial.printf("TARGETS:\n [---,%g,%g,%g,%g,%g]\n",T_ARG_2,T_ARG_3,T_ARG_4,T_ARG_5,-T_ARG_5);
         }
 
@@ -492,5 +490,10 @@ bool test_checksum(uint8_t* data){
 void registering_pos(uint8_t id,float arg){
   int nxtpos = arg + 0; /*roundf(radian_arg*651.899);*/
   int nowpos = Servo.ReadPos(id);
-  if(isfinite(nxtpos)){Servo.WritePosEx(id, nxtpos, 300, 150);}
+  if(isfinite(nxtpos)){
+    while(nxtpos<0){
+      nxtpos+=4096;
+    }
+    Servo.WritePosEx(id, nxtpos, 300, 150);
+  }
 }

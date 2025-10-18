@@ -14,36 +14,41 @@
 #define AUTO_SWITCH_MS 7500 // 起動後 何ms で自動に切り替えるか
 
 // アーム用のあれこれ 
-#define LEG_2 140.0f // サーボ2<->3 の長さ (mm)
+#define LEG_2 140.4f // サーボ2<->3 の長さ (mm)
 #define LEG_3 190.0f // サーボ3<->4 の長さ (mm)
-#define LEG_4 165.0f // サーボ4<->5 の長さ (mm)
-#define LEG_s -8875.0f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
+#define LEG_4 164.3f // サーボ4<->5 の長さ (mm)
+#define LEG_s -9105.51f // - サーボ3<->4 の長さの2乗 + サーボ4<->5 の長さの2乗 (mm2)
 #define PRG_2 1979 // サーボ2 水平位置 (x1/4096回転)
-#define PRG_3 2033 // サーボ3 水平位置 (x1/4096回転)
-#define PRG_4 2129 // サーボ4 水平位置 (x1/4096回転)
-#define PRG_5 3115 // サーボ5 水平位置 (x1/4096回転)
-#define PRG_6 716  // サーボ6 水平位置 (x1/4096回転)
-#define GER_2 -1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
-#define GER_3 -1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
-#define GER_4 -1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
+#define PRG_3 1984 // サーボ3 水平位置 (x1/4096回転)
+#define PRG_4 2134 // サーボ4 水平位置 (x1/4096回転)
+#define PRG_5 -629 // サーボ5 水平位置 (x1/4096回転)
+#define PRG_6 4435  // サーボ6 水平位置 (x1/4096回転)
+#define GER_2 1.0f // サーボ2 ギア比 (モーター 1:n 駆動)
+#define GER_3 1.0f // サーボ3 ギア比 (モーター 1:n 駆動)
+#define GER_4 1.0f // サーボ4 ギア比 (モーター 1:n 駆動)
 #define GER_5 2.0f // サーボ5 ギア比 (モーター 1:n 駆動) 6は負
-#define ARM_RESETTING true // trueの場合、LIMの範囲はすべて自動で設定される。
+#define ARM_RESETTING false // trueの場合、LIMの範囲はすべて自動で設定される。
 #define DEBUG_MODE true
-#define LIM_X_MIN 40.0f   // Xの最小値mm
+#define LIM_X_MIN 120.0f   // Xの最小値mm
 #define LIM_X_MAX 600.0f  // Xの最大値mm
-#define LIM_Y_MIN -100.0f // Yの最小値mm
-#define LIM_Y_MAX 250.0f  // Yの最大値mm
-#define TG_OPEN 2000
-#define TG_CLOS 2600
+#define LIM_Y_MIN -40.0f // Yの最小値mm
+#define LIM_Y_MAX 300.0f  // Yの最大値mm
+#define TG_OPEN 1950
+
+#define TG_CLOS 2607
+
+const float ARMPRESET1[2] = {120.0f,320.0f};  /*X, Y(mm)*/ 
+const float ARMPRESET2[2] = {120.0f,130.0f};  /*X, Y(mm)*/ 
+const float ARMPRESET3[2] = {200.0f,-40.0f}; /*X, Y(mm)*/ 
 
 /*
   モーター反映状況
   M1: Ok
-  M2: NG ギア比: -1
-  M3: Ok ギア比: -1
-  M4: Ok ギア比: -1
-  M5: NG ギア比: 2
-  M6: NG ギア比: -2
+  M2: Ok ギア比: 1
+  M3: Ok ギア比: 1
+  M4: Ok ギア比: 1
+  M5: Ok ギア比: 2
+  M6: Ok ギア比: -2
 */
 
 
@@ -52,6 +57,7 @@ bool automationEnable = false; // falseの場合は自動化しない (ラズパ
 SMS_STS Servo;
 int prev_ms;  // PS4コントローラー通信タイムアウト
 int loop_delta; // コントロールの時間差分
+int armtime_delta; // アーム専用時間計測
 int sw_time;  // コントローラーが最後につながってた時間
 int delta_sw_time;
 
@@ -98,17 +104,18 @@ void setup() {
   Servo.WritePosEx(2,0,0);
 
   // アーム角度計算 (1/4096回転単位)
-  float DEG_3 = 0;
-  float DEG_4 = 0;
-  float DEG_5 = 0;
+  float DEG_3 = (Servo.Ping(3)==-1) ? 0 : (Servo.ReadPos(3)-PRG_3)/GER_3;
+  float DEG_4 = (Servo.Ping(4)==-1) ? 0 : (Servo.ReadPos(4)-PRG_4)/GER_4;
+  float DEG_5 = (Servo.Ping(5)==-1) ? 0 : (Servo.ReadPos(5)-PRG_5)/GER_5;
+
   // アーム現在地取得
   // cos,sinはラジアンを引数に取るので、PI/2048をかけて-4096~4096を-2pi～2piへ変換
 
   #define ROTPI 0.0015340 //=PI/2048
 
   if(DEG_5==0||DEG_4==0||DEG_3==0){
-    arm_pos_x = 150;
-    arm_pos_y = 0;
+    arm_pos_x = ARMPRESET3[0];
+    arm_pos_y = ARMPRESET3[1];
   }else{
     arm_pos_x = 
       LEG_4*cosf((DEG_5)*ROTPI) + 
@@ -127,6 +134,7 @@ void setup() {
   prev_ms = millis(); 
   loop_delta = millis();
   sw_time = millis();
+  armtime_delta = micros();
   delay(100);
 }
 
@@ -177,9 +185,6 @@ void loop() {
     #define KEY_ARM_PRESET_2 PS4.L2() // プリセット2へ移動させます。
     #define KEY_ARM_PRESET_3 PS4.PSButton() // プリセット3へ移動させます。
 
-    const float ARMPRESET1[2] = {50.0f,320.0f};  /*X, Y(mm)*/ 
-    const float ARMPRESET2[2] = {50.0f,130.0f};  /*X, Y(mm)*/ 
-    const float ARMPRESET3[2] = {80.0f,-200.0f}; /*X, Y(mm)*/ 
 
 
     // MODE 2+| 予備
@@ -235,8 +240,73 @@ void loop() {
 
       // put アームの処理 here.
 
-      
+      /*
+        注意：PRG_3,4,5について
+        これらは「水平時の角度データ」を示す。
 
+          5---4---3--2
+   ⌜       ⌝         1
+
+        角度を出す際はこの値を引く。
+        例えばPRG_3=1024であれば、サーボ3が0であった場合-90°(-1024)を示す。
+        もし図面とサーボ回転方向が逆であればギア比を負にすること。
+      */
+
+      // 動かす。
+      static float ARG_PERCENTILE[4] = {0.0f,-.25f,-.25f,0.50f};
+
+      const float APAP_0[3] = {-.25f,-.25f,0.55f}; // ARG PERCENTILE FOR ARM PRESET (DEFAULT)
+      const float APAP_1[3] = {-.35f,-.53f,0.47f}; // ARG PERCENTILE FOR ARM PRESET (UP)
+      const float APAP_2[3] = {-.17f,-.16f,0.57f}; // ARG PERCENTILE FOR ARM PRESET (DOWN)
+
+      static int coa = 0x0;
+
+      if ( KEY_ARM_PRESET_1 && !KEY_ARM_PRESET_2 && !KEY_ARM_PRESET_3) {coa=1;}
+      else if (!KEY_ARM_PRESET_1 &&  KEY_ARM_PRESET_2 && !KEY_ARM_PRESET_3) {coa=2;}
+      else if (!KEY_ARM_PRESET_1 && !KEY_ARM_PRESET_2 &&  KEY_ARM_PRESET_3) {coa=0;}
+      
+      switch (coa)
+        {
+        case 1:
+          ARG_PERCENTILE[1]=APAP_1[0];
+          ARG_PERCENTILE[2]=APAP_1[1];
+          ARG_PERCENTILE[3]=APAP_1[2];
+          break;
+        case 2:
+          ARG_PERCENTILE[1]=APAP_2[0];
+          ARG_PERCENTILE[2]=APAP_2[1];
+          ARG_PERCENTILE[3]=APAP_2[2];
+          break;
+        default:
+          ARG_PERCENTILE[1]=APAP_0[0];
+          ARG_PERCENTILE[2]=APAP_0[1];
+          ARG_PERCENTILE[3]=APAP_0[2];
+          break;
+      }
+      ARG_PERCENTILE[1] += (STICK_ARM_FRONT*0.00078f);
+
+      ARG_PERCENTILE[0] = -.5f - (ARG_PERCENTILE[1]+ARG_PERCENTILE[2]+ARG_PERCENTILE[3]-0.05f);
+      if(abs(ARG_PERCENTILE[0])>=0.575f){ARG_PERCENTILE[0] = 0.575f*roundf(ARG_PERCENTILE[0]/abs(ARG_PERCENTILE[0]));}
+      float T_ARG_5 = PI*ARG_PERCENTILE[3];
+      float T_ARG_4 = PI*ARG_PERCENTILE[2];
+      float T_ARG_3 = PI*ARG_PERCENTILE[1];
+      float T_ARG_2 = PI*ARG_PERCENTILE[0];
+
+      #define ANTI_ROTPI 651.90f // 2048/PI
+
+      if(isfinite(T_ARG_2)&&isfinite(T_ARG_3)&&isfinite(T_ARG_4)&&isfinite(T_ARG_5)){
+        // すべてが有限数字であれば反映
+        registering_pos(2, (T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2);
+        registering_pos(3, (T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3);
+        registering_pos(4, (T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4);
+        registering_pos(5, (T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5);
+        registering_pos(6, (T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6);
+      }
+
+      Serial.printf("TARGET: Disabled a=c%d MTR:%g,%g,%g,%g,%g,%g \n",coa,is_arm_opened?TG_OPEN:TG_CLOS,roundf((T_ARG_2*ANTI_ROTPI*GER_2)+PRG_2),roundf((T_ARG_3*ANTI_ROTPI*GER_3)+PRG_3),roundf((T_ARG_4*ANTI_ROTPI*GER_4)+PRG_4),roundf((T_ARG_5*ANTI_ROTPI*GER_5)+PRG_5),roundf((T_ARG_5*ANTI_ROTPI*(-GER_5))+PRG_6));
+      if(DEBUG_MODE){
+        Serial.printf("TARGETS:\n [---,%g,%g,%g,%g,%g]\n",T_ARG_2,T_ARG_3,T_ARG_4,T_ARG_5,-T_ARG_5);
+      }
       static bool key_arm_holding = false;
       if(KEY_ARM_HOLD){
         PS4.setLed(0xff,0x00,0xff);          
@@ -295,18 +365,6 @@ void loop() {
       }
 
       // スティックのキャリブレーション
-      if(KEY_ADJ_STRT){
-        PS4.setFlashRate(200,200);
-        deltasumcount+=1;
-        deltasumstick+=STICK_ROTATE;
-      }else{
-        PS4.setFlashRate(0,0);
-        if(deltasumcount>0){
-          adjusting_stick_100x = (deltasumstick*100)/deltasumcount;
-          deltasumcount = 0;
-          deltasumstick = 0;
-        }
-      }
     }else{
       mode_=1;
     }
@@ -375,5 +433,10 @@ bool test_checksum(uint8_t* data){
 void registering_pos(uint8_t id,float arg){
   int nxtpos = arg + 0; /*roundf(radian_arg*651.899);*/
   int nowpos = Servo.ReadPos(id);
-  if(isfinite(nxtpos)){Servo.WritePosEx(id, nxtpos, 300, 150);}
+  if(isfinite(nxtpos)){
+    while(nxtpos<0){
+      nxtpos+=4096;
+    }
+    Servo.WritePosEx(id, nxtpos, 700, 250);
+  }
 }
