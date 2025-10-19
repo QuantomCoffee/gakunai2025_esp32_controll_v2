@@ -254,9 +254,9 @@ void loop() {
       // 動かす。
       static float ARG_PERCENTILE[4] = {0.0f,-.25f,-.25f,0.50f};
 
-      const float APAP_0[3] = {-.36f,-.30f,0.47f}; // ARG PERCENTILE FOR ARM PRESET (DEFAULT)
-      const float APAP_1[3] = {-.31f,-.47f,0.40f}; // ARG PERCENTILE FOR ARM PRESET (DOWN)
-      const float APAP_2[3] = {-.17f,-.30f,0.72f}; // ARG PERCENTILE FOR ARM PRESET (UP)
+      const float APAP_0[3] = {-.16f,-.30f,0.57f}; // ARG PERCENTILE FOR ARM PRESET (DEFAULT)
+      const float APAP_1[3] = {-.01f,-.45f,0.40f}; // ARG PERCENTILE FOR ARM PRESET (DOWN)
+      const float APAP_2[3] = {-.04f,-.30f,0.72f}; // ARG PERCENTILE FOR ARM PRESET (UP)
 
       static int coa = 0x0;
 
@@ -284,7 +284,7 @@ void loop() {
       }
       ARG_PERCENTILE[1] += (STICK_ARM_FRONT*0.00078f);
 
-      ARG_PERCENTILE[0] = -.5f - (ARG_PERCENTILE[1]+ARG_PERCENTILE[2]+ARG_PERCENTILE[3]);
+      ARG_PERCENTILE[0] = -.42f - (ARG_PERCENTILE[1]+ARG_PERCENTILE[2]+ARG_PERCENTILE[3]);
       if(abs(ARG_PERCENTILE[0])>=0.575f){ARG_PERCENTILE[0] = 0.575f*roundf(ARG_PERCENTILE[0]/abs(ARG_PERCENTILE[0]));}
       float T_ARG_5 = PI*ARG_PERCENTILE[3];
       float T_ARG_4 = PI*ARG_PERCENTILE[2];
@@ -442,8 +442,6 @@ void registering_pos(uint8_t id,float arg){
     }
     if(abs(nxtpos-nowpos)<=10){
       Servo.EnableTorque(id, 1);
-    }else if(id==4){
-      Servo.WritePosEx(id, nxtpos, 400, 250);
     }else{
       Servo.WritePosEx(id, nxtpos, 700, 250);
     }

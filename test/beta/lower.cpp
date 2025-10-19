@@ -20,10 +20,10 @@
 #define MD_PIN_LOCK 27
 #define MV_SCALE 0.65
 
-#define DEF_ADJ_0 1.0f
+#define DEF_ADJ_0 0.85f
 #define DEF_ADJ_1 1.0f
 #define DEF_ADJ_2 1.0f
-#define DEF_ADJ_3 1.0f
+#define DEF_ADJ_3 1.05f
 
 // define global status
 int prev_ms;
@@ -159,8 +159,8 @@ int move_liner(int speed, int dx, int dy, bool reb) {
     
     if(reb){digitalWrite(MD_PIN_LOCK,LOW);} // 一度切る
 
-    double dxad = (dx*speed)/24.0;
-    double dyad = (dy*speed)/24.0;
+    double dxad = (dx*speed)/11.0;
+    double dyad = (dy*speed)/11.0;
 
     /*
         モーター配置
