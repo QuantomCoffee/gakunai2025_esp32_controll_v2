@@ -443,7 +443,7 @@ void registering_pos(uint8_t id,float arg){
     if(abs(nxtpos-nowpos)<=10){
       Servo.EnableTorque(id, 1);
     } else if(id==1){
-      Servo.WritePosEx(1, nxtpos, 1000, 350);
+      Servo.WritePosEx(1, nxtpos, 1000);
     } else{
       Servo.WritePosEx(id, nxtpos, 700, 250);
     }
